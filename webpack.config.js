@@ -25,6 +25,12 @@ module.exports = {
 			},
         }
       },
+      { 
+      	test: /(\.css$)/, 
+      	use : [	{loader: "style-loader"},
+				{loader: "css-loader"}, 
+			] 
+      },
       {
 	    test: /\.less$/,
 	    use: [
@@ -32,7 +38,8 @@ module.exports = {
 			{loader: "css-loader"},
 			{loader: "less-loader",
 			  options: {
-			    modifyVars: themeVariables
+			    modifyVars: themeVariables,
+			    javascriptEnabled : true
 			  }
 			}
 	    ]
