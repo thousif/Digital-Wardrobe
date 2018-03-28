@@ -7,6 +7,7 @@ const themeVariables = lessToJs(fs.readFileSync(path.join(__dirname, './src/styl
 
 module.exports = {
   entry: [
+    'babel-polyfill',
     'react-hot-loader/patch',
     './src/index.js'
   ],

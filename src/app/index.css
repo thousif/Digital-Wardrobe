@@ -1,0 +1,37 @@
+.layout,.layout .header,.layout .footer{
+	background-color: #fff;
+}
+
+.header {
+	margin : 20px auto;
+}
+
+.header .title {
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 42px;
+	color : #494949;
+	padding : 0 50px;
+}
+
+.header .title-bar {
+	border-width: 6px;
+    border-style: solid;
+    border-radius: 6px;
+    border-color: #d4d4d4;
+}
+
+.content{
+	max-width: 940px;
+	margin: 50px auto;
+	width: 100%;
+}
+
+.loadmore-list {
+  min-height: 350px;
+}
+
+.img-container {
+	background-color: #eee;
+	padding : 15px;
+}
