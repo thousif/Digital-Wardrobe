@@ -77,9 +77,11 @@ class App extends Component {
     //     data: res.results,
     //   });
     // });
+
     this.setState({
     	...this.state,
     	loading : false,
+    	store : 'd' + moment().format('YYYYMMDD'),
     	data : [{
     		title : 'Today',
     		name : {
@@ -98,55 +100,53 @@ class App extends Component {
 	    return;
 	}
 
-	// console.log(this.state);
+	const self = this;
 
-	// let {fileList} = this.state;
-
-	// let target = fileList.findIndex(f => f.uid == file.uid);
-
-	// fileList[1] = {
-	// 	uid : file.uid,
-	// 	name : file.name,
-	// 	status : "done",
-	// 	url : file.url
-	// }
-
-	// this.setState({
-	// 	...this.state,
-	// 	fileList
-	// })
-
-	let file = {
+	file = {
 		...file,
 		status : 'done'
 	}
 	
-	var open = indexedDB.open('myDatabase', 1);
+	const open = indexedDB.open('myDatabase', 1);
+
+	const storeObjectName = this.state.store;
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
 	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
-	    var index = store.createIndex("uri", "uri", {unique : false});
+	    var index = store.createIndex(storeObjectName , storeObjectName , {unique : false});
 	};
 
-  	open.onsuccess = function() {
+  	open.onsuccess = () => {
 	    // Start a new transaction
 	    var db = open.result;
 	    var tx = db.transaction("MyObjectStore", "readwrite");
 	    var store = tx.objectStore("MyObjectStore");
-	    var index = store.index("uri");
+	    var index = store.index(storeObjectName);
 
 	    console.log(index);
 	    // // Add some data
-	    store.put({id: file, uri : file });
+	    store.put({id: file.uid , uri : file });
 	    // store.put({id: 67890, name: {first: "Bob", last: "Smith"}, age: 35});
 	    
 	    // // Query the data
-	    var getJohn = store.get(12345);
+	    var getJohn = store.get(file.uid);
 	    // var getBob = index.get(["Smith", "Bob"]);
 
 	    getJohn.onsuccess = function() {
 	        console.log(getJohn);  // => "John"
+	    	
+	    	let {fileList} = self.state;
+
+			let target = fileList.findIndex(f => f.uid == file.uid);
+
+			fileList[1] = file;
+
+			self.setState({
+				...this.state,
+				fileList
+			})
+
 	    };
 
 	    // getBob.onsuccess = function() {
@@ -250,7 +250,6 @@ class App extends Component {
 				          </List.Item>
 				          <div className="img-container"> 
 					        <Upload
-					          action="//jsonplaceholder.typicode.com/posts/"
 					          customRequest = {this.handleUpload}
 					          listType="picture-card"
 					          fileList={fileList}
