@@ -56,6 +56,7 @@ class App extends Component {
             canvas.getContext("2d").drawImage(this,0,0,width,height);
 
             var dataUrl = canvas.toDataURL("image/jpeg",0.8);
+            
             cb({
             	url : dataUrl,
             	uid : file.uid,
@@ -81,17 +82,69 @@ class App extends Component {
     this.setState({
     	...this.state,
     	loading : false,
-    	store : 'd' + moment().format('YYYYMMDD'),
+    	date : moment().format('YYYYMMDD'),
     	data : [{
     		title : 'Today',
     		name : {
     			last : 'jay'
     		}
     	}]
+    },function(){
+    	this.getStore();
     })
 
+    
 	// this.getBase64FromImageUrl(this.state.fileList[0].url,this.storeToDB)
 
+  }
+
+  getStore = () => {
+  	console.log("fetching all stored images");
+  	if (!('indexedDB' in window)) {
+	    console.log('This browser doesn\'t support IndexedDB');
+	    return;
+	}
+
+	const self = this;
+
+	const open = indexedDB.open('myDatabase', 1 ,function(upgrade){
+		console.log("upgrade",upgrade);
+	});
+
+	open.onupgradeneeded = function() {
+	    var db = open.result;
+	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
+	    var index = store.createIndex("date" , "date" , {unique : false});
+	};
+
+  	open.onerror = (err) => {
+  		console.log(err);
+  	}
+
+  	open.onsuccess = () => {
+	    var db = open.result;
+	    var tx = db.transaction("MyObjectStore", "readwrite");
+	    var store = tx.objectStore("MyObjectStore");
+	    var index = store.index("date");
+
+	    // Query the data
+	    var getAll = index.getAll(self.state.date);
+	    
+	    getAll.onsuccess = function() {
+	    	console.log(getAll);
+	   		if(getAll.result && getAll.result.length > 0){
+	   			let fileList = getAll.result.map(data => data.uri);
+	   			self.setState({
+	   				...self.state,
+	   				fileList
+	   			})
+	   		}
+	    };
+
+	    tx.oncomplete = function() {
+	        db.close();
+	    };
+	}		
   }
 
   storeToDB = (file) => {
@@ -109,51 +162,42 @@ class App extends Component {
 	
 	const open = indexedDB.open('myDatabase', 1);
 
-	const storeObjectName = this.state.store;
-
 	open.onupgradeneeded = function() {
 	    var db = open.result;
 	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
-	    var index = store.createIndex(storeObjectName , storeObjectName , {unique : false});
+	    var index = store.createIndex("date" , "date" , {unique : false});
 	};
 
   	open.onsuccess = () => {
-	    // Start a new transaction
 	    var db = open.result;
 	    var tx = db.transaction("MyObjectStore", "readwrite");
 	    var store = tx.objectStore("MyObjectStore");
-	    var index = store.index(storeObjectName);
+	    var index = store.index("date");
 
-	    console.log(index);
-	    // // Add some data
-	    store.put({id: file.uid , uri : file });
-	    // store.put({id: 67890, name: {first: "Bob", last: "Smith"}, age: 35});
-	    
-	    // // Query the data
-	    var getJohn = store.get(file.uid);
-	    // var getBob = index.get(["Smith", "Bob"]);
+	    store.put({id: file.uid , uri : file , date : self.date});
 
-	    getJohn.onsuccess = function() {
-	        console.log(getJohn);  // => "John"
+	    var getImage = index.get(file.uid);
+
+	    getImage.onsuccess = function() {
 	    	
 	    	let {fileList} = self.state;
 
 			let target = fileList.findIndex(f => f.uid == file.uid);
 
-			fileList[1] = file;
+			if(target > 0){
+				fileList[target] = file;
 
-			self.setState({
-				...this.state,
-				fileList
-			})
+				self.setState({
+					...this.state,
+					fileList
+				})
+			} else {
+				console.log("Invalid id, file not found");
+			}
 
 	    };
 
-	    // getBob.onsuccess = function() {
-	    //     console.log(getBob.result.name.first);   // => "Bob"
-	    // };
-
-	    // // Close the db when the transaction is done
+	    // Close the db when the transaction is done
 	    tx.oncomplete = function() {
 	        db.close();
 	    };
@@ -170,24 +214,6 @@ class App extends Component {
         callback(res);
       },
     });
-  }
-
-  onLoadMore = () => {
-    // this.setState({
-    //   loadingMore: true,
-    // });
-    // this.getData((res) => {
-    //   const data = this.state.data.concat(res.results);
-    //   this.setState({
-    //     data,
-    //     loadingMore: false,
-    //   }, () => {
-    //     // Resetting window's offsetTop so as to display react-virtualized demo underfloor.
-    //     // In real scene, you can using public method of react-virtualized:
-    //     // https://stackoverflow.com/questions/46700726/how-to-use-public-method-updateposition-of-react-virtualized
-    //     window.dispatchEvent(new Event('resize'));
-    //   });
-    // });
   }
 
   handleCancel = () => this.setState({ previewVisible: false })
@@ -228,7 +254,7 @@ class App extends Component {
       <div >
       	<Layout className="layout">
         	<Header className="header">
-        		<h1 className="title">iClap demo network</h1>
+        		<h1 className="title">Ward robe</h1>
         		<hr className="title-bar"/>
         	</Header>
         	<Content className="content">
@@ -256,7 +282,7 @@ class App extends Component {
 					          onPreview={this.handlePreview}
 					          onChange={this.handleChange}
 					        >
-					          {fileList.length >= 3 ? null : uploadButton}
+					          {uploadButton}
 					        </Upload>
 					        <Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
 					          <img alt="example" style={{ width: '100%' }} src={previewImage} />
