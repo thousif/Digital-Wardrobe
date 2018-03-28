@@ -1,4 +1,9 @@
 const webpack = require('webpack');
+const path = require('path');
+const fs  = require('fs');
+const lessToJs = require('less-vars-to-js');
+
+const themeVariables = lessToJs(fs.readFileSync(path.join(__dirname, './src/styles/custom-ant-styles.less'), 'utf8'));
 
 module.exports = {
   entry: [
@@ -10,8 +15,28 @@ module.exports = {
       {
         test: /\.(js|jsx)$/,
         exclude: /node_modules/,
-        use: ['babel-loader']
-      }
+        use: {
+        	loader : 'babel-loader',
+        	options: {
+			    presets: [],
+			    plugins: [
+			      ['import', { libraryName: "antd", style: true }]
+			    ]
+			},
+        }
+      },
+      {
+	    test: /\.less$/,
+	    use: [
+			{loader: "style-loader"},
+			{loader: "css-loader"},
+			{loader: "less-loader",
+			  options: {
+			    modifyVars: themeVariables
+			  }
+			}
+	    ]
+	  }
     ]
   },
   resolve: {
