@@ -10,6 +10,7 @@ import { List,
 	Menu,
 	message, 
 	DatePicker,
+	Tooltip,
 	notification } from 'antd'
 import moment from 'moment'
 import './index.css'
@@ -50,6 +51,7 @@ class App extends Component {
 
         image.onload=function(){
 
+        	// basic image optimization for storing big images
             var MAXWidthHeight = 800;
             var resolution = MAXWidthHeight/Math.max(this.width,this.height),
 
@@ -88,12 +90,10 @@ class App extends Component {
 	    return;
 	}
 
-	// since 
+	// passing state to local scope 
 	const self = this;
 
-	const open = indexedDB.open('myDatabase', 1 ,function(upgrade){
-		console.log("upgrade",upgrade);
-	});
+	const open = indexedDB.open('myDatabase', 1);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
@@ -116,6 +116,7 @@ class App extends Component {
 	    
 	    getAll.onsuccess = function() {
 	    	console.log(getAll);
+	    	//updating state with data retrieved from database
 	   		if(getAll.result && getAll.result.length >= 0){
 	   			let fileList = getAll.result.map(data => data.uri);
 	   			self.setState({
@@ -130,6 +131,7 @@ class App extends Component {
 	    	console.log(getAll.error);
 	    }
 
+	    // closing db connection
 	    tx.oncomplete = function() {
 	        db.close();
 	    };
@@ -143,6 +145,7 @@ class App extends Component {
 	    return;
 	}
 
+	// passing state to local scope 
 	const self = this;
 
 	file = {
@@ -338,7 +341,7 @@ class App extends Component {
     const uploadButton = (
       <div>
         <Icon type="plus" />
-        <div className="ant-upload-text">Upload</div>
+        <div className="ant-upload-text">Add</div>
       </div>
     );
     return (
@@ -353,7 +356,14 @@ class App extends Component {
 			        className="loadmore-list"
 			        itemLayout="horizontal"
 			        >
-		          <List.Item actions={[<a><Icon type="left" onClick={()=>this.previousDay()} /></a>, <a><Icon type="right" onClick={()=>this.nextDay()}/></a>]}>
+		          <List.Item actions={[
+		          	<Tooltip placement="top" title={"Previous Day"}>
+			        	<a><Icon type="left" onClick={()=>this.previousDay()} /></a>
+			        </Tooltip>, 
+			        <Tooltip placement="top" title={"Next Day"}>
+			        	<a><Icon type="right" onClick={()=>this.nextDay()}/></a>
+			        </Tooltip>	
+			        ]}>
 		            <List.Item.Meta
 		              avatar={<Avatar style={{backgroundColor : colorList[0] ,verticalAlign: 'middle'}} size="large">{day.title.slice(0,2)}</Avatar>}
 		              title={<a href="">{day.title}</a>}
