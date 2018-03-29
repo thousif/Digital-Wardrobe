@@ -257,7 +257,6 @@ class App extends Component {
   }
 
   handleUpload = (file) => {
-  	if(file.type)
   	this.getBase64FromImageUrl(file.file,this.storeToDB)
   }
 
