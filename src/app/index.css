@@ -32,6 +32,11 @@
 }
 
 .img-container {
-	background-color: #eee;
-	padding : 15px;
+	background-color: #eeeeee47;
+    padding: 15px;
+    min-height: 300px;
+    border-radius: 5px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    /*box-shadow: inset 0px 0px 2px 0px;*/
 }

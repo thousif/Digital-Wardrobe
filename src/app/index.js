@@ -7,7 +7,9 @@ import { List,
 	Icon, 
 	Modal , 
 	Layout, 
-	Menu, 
+	Menu,
+	message, 
+	DatePicker,
 	notification } from 'antd'
 import moment from 'moment'
 import './index.css'
@@ -19,18 +21,20 @@ class App extends Component {
     super(props);
     console.log(this.props);
     this.state =  {
-	    loading: true,
-	    loadingMore: false,
-	    showLoadingMore: true,
-	    data: [],
+	    date : moment().format('YYYYMMDD'),
+	    day : {
+	    	title : moment().calendar(null, {
+			    sameDay: '[Today]',
+			    nextDay: '[Tomorrow]',
+			    nextWeek: 'dddd',
+			    lastDay: '[Yesterday]',
+			    lastWeek: '[Last] dddd',
+			    sameElse: 'DD/MM/YYYY'
+			}) 
+	    },
 	    previewVisible: false,
 	    previewImage: '',
-	    fileList: [{
-	      uid: -1,
-	      name: 'xxx.png',
-	      status: 'done',
-	      url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
-	    }],
+	    fileList: [],
 	}
   }
 
@@ -64,44 +68,19 @@ class App extends Component {
             });
         }
     }
-	
-	console.log(file);
 
 	fileReader.readAsDataURL(file);
-    // img.src = url;
   }
 
   componentDidMount() {
-    // this.getData((res) => {
-    //   this.setState({
-    //     loading: false,
-    //     data: res.results,
-    //   });
-    // });
-
-    this.setState({
-    	...this.state,
-    	loading : false,
-    	date : moment().format('YYYYMMDD'),
-    	data : [{
-    		title : 'Today',
-    		name : {
-    			last : 'jay'
-    		}
-    	}]
-    },function(){
-    	this.getStore();
-    })
-
-    
-	// this.getBase64FromImageUrl(this.state.fileList[0].url,this.storeToDB)
-
+    this.getStore();
   }
 
   getStore = () => {
   	console.log("fetching all stored images");
   	if (!('indexedDB' in window)) {
 	    console.log('This browser doesn\'t support IndexedDB');
+	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}
 
@@ -118,6 +97,7 @@ class App extends Component {
 	};
 
   	open.onerror = (err) => {
+	    message.error("Error fetching data.");
   		console.log(err);
   	}
 
@@ -127,12 +107,11 @@ class App extends Component {
 	    var store = tx.objectStore("MyObjectStore");
 	    var index = store.index("date");
 
-	    // Query the data
 	    var getAll = index.getAll(self.state.date);
 	    
 	    getAll.onsuccess = function() {
 	    	console.log(getAll);
-	   		if(getAll.result && getAll.result.length > 0){
+	   		if(getAll.result && getAll.result.length >= 0){
 	   			let fileList = getAll.result.map(data => data.uri);
 	   			self.setState({
 	   				...self.state,
@@ -140,6 +119,11 @@ class App extends Component {
 	   			})
 	   		}
 	    };
+
+	    getAll.onerror = function() {
+	    	message.error("Error! Try again later");
+	    	console.log(getAll.error);
+	    }
 
 	    tx.oncomplete = function() {
 	        db.close();
@@ -150,6 +134,7 @@ class App extends Component {
   storeToDB = (file) => {
   	if (!('indexedDB' in window)) {
 	    console.log('This browser doesn\'t support IndexedDB');
+	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}
 
@@ -174,17 +159,19 @@ class App extends Component {
 	    var store = tx.objectStore("MyObjectStore");
 	    var index = store.index("date");
 
-	    store.put({id: file.uid , uri : file , date : self.date});
+	    store.put({id: file.uid , uri : file , date : self.state.date});
 
-	    var getImage = index.get(file.uid);
+	    var saveImage = index.get(file.uid);
 
-	    getImage.onsuccess = function() {
+	    saveImage.onsuccess = function() {
 	    	
+	    	message.success("Successfully uploaded the image.")
+
 	    	let {fileList} = self.state;
 
 			let target = fileList.findIndex(f => f.uid == file.uid);
 
-			if(target > 0){
+			if(target >= 0){
 				fileList[target] = file;
 
 				self.setState({
@@ -192,29 +179,65 @@ class App extends Component {
 					fileList
 				})
 			} else {
-				console.log("Invalid id, file not found");
+				console.log("Invalid target id");
 			}
 
 	    };
 
-	    // Close the db when the transaction is done
+	    saveImage.onerror = function() {
+	    	message.error("Error uploading the image.")
+	    	console.log(saveImage.error);
+	    }
+
 	    tx.oncomplete = function() {
 	        db.close();
 	    };
 	}		
   }
 
-  getData = (callback) => {
-    reqwest({
-      url: fakeDataUrl,
-      type: 'json',
-      method: 'get',
-      contentType: 'application/json',
-      success: (res) => {
-        callback(res);
-      },
-    });
+  deleteFromDB = (file) => {
+  	if (!('indexedDB' in window)) {
+	    console.log('This browser doesn\'t support IndexedDB');
+	    message.error("Your browser does not support this feature. please update to access.");
+	    return;
+	}
+
+	const self = this;
+	
+	const open = indexedDB.open('myDatabase', 1);
+
+	open.onupgradeneeded = function() {
+	    var db = open.result;
+	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
+	    var index = store.createIndex("date" , "date" , {unique : false});
+	};
+
+  	open.onsuccess = () => {
+	    var db = open.result;
+	    var tx = db.transaction("MyObjectStore", "readwrite");
+	    var store = tx.objectStore("MyObjectStore");
+	    var index = store.index("date");
+
+	    store.put({id: file.uid , uri : file , date : self.state.date});
+
+	    var getImage = store.delete(file.uid);
+
+	    getImage.onsuccess = function() {
+	    	console.log("deleted from db");
+	    	message.success("Successfully deleted the image.")
+	    };
+
+	    getImage.onerror = function() {
+	    	message.error("Error deleting the image.")
+	    	console.log(getImage.error);
+	    }
+
+	    tx.oncomplete = function() {
+	        db.close();
+	    };
+	}	
   }
+
 
   handleCancel = () => this.setState({ previewVisible: false })
 
@@ -226,17 +249,79 @@ class App extends Component {
   }
 
   handleUpload = (file) => {
-  	console.log(file);
   	this.getBase64FromImageUrl(file.file,this.storeToDB)
   }
 
-  handleChange = ({ fileList }) => {
+  handleChange = ({file, fileList }) => {
   	console.log(fileList);
+  	if(file.status == "removed"){
+  		this.deleteFromDB(file);
+  	}
   	this.setState({ fileList })
   }
 
+  handleDateChange = (t) => {
+  	console.log(moment(t).format('YYYYMMDD'));
+  	this.setState({
+  		...this.state,
+  		date : moment(t).format('YYYYMMDD'),
+  		day : {
+	    	title : moment(t).calendar(null, {
+			    sameDay: '[Today]',
+			    nextDay: '[Tomorrow]',
+			    nextWeek: 'dddd',
+			    lastDay: '[Yesterday]',
+			    lastWeek: '[Last] dddd',
+			    sameElse: 'DD/MM/YYYY'
+			}) 
+	    },
+  	},function(){
+  		this.getStore();
+  	})
+  }
+
+  previousDay = () => {
+  	let date = moment(this.state.date).subtract(1,'days').format('YYYYMMDD')
+  	this.setState({
+  		...this.state,
+  		date,
+	    day : {
+	    	title : moment(date).calendar(null, {
+			    sameDay: '[Today]',
+			    nextDay: '[Tomorrow]',
+			    nextWeek: 'dddd',
+			    lastDay: '[Yesterday]',
+			    lastWeek: '[Last] dddd',
+			    sameElse: 'DD/MM/YYYY'
+			}) 
+	    },
+  	},function(){
+  		this.getStore()
+  	})
+  }
+
+  nextDay = () => {
+  	let date = moment(this.state.date).add(1,'days').format('YYYYMMDD')
+  	this.setState({
+  		...this.state,
+  		date,
+	    day : {
+	    	title : moment(date).calendar(null, {
+			    sameDay: '[Today]',
+			    nextDay: '[Tomorrow]',
+			    nextWeek: 'dddd',
+			    lastDay: '[Yesterday]',
+			    lastWeek: '[Last] dddd',
+			    sameElse: 'DD/MM/YYYY'
+			}) 
+	    },
+  	},function(){
+  		this.getStore()
+  	})
+  }
+
   render() {
-    const { loading, loadingMore, showLoadingMore, data } = this.state;
+    const { loading, loadingMore, showLoadingMore, day } = this.state;
     const loadMore = showLoadingMore ? (
       <div style={{ textAlign: 'center', marginTop: 12, height: 32, lineHeight: '32px' }}>
         {loadingMore && <Spin />}
@@ -254,43 +339,38 @@ class App extends Component {
       <div >
       	<Layout className="layout">
         	<Header className="header">
-        		<h1 className="title">Ward robe</h1>
+        		<h1 className="title">Iclap</h1>
         		<hr className="title-bar"/>
         	</Header>
         	<Content className="content">
         		<List
 			        className="loadmore-list"
-			        loading={loading}
 			        itemLayout="horizontal"
-			        loadMore={loadMore}
-			        dataSource={data}
-			        renderItem={(item,index) => (
-			          <div>
-				          <List.Item actions={[<a>edit</a>, <a>more</a>]}>
-				            <List.Item.Meta
-				              avatar={<Avatar style={{backgroundColor : colorList[index] ,verticalAlign: 'middle'}} size="large">{item.title.slice(0,1)}</Avatar>}
-				              title={<a href="https://ant.design">{item.title}</a>}
-				              description={moment().format("MMM Do YY")}
-				            />
-				            <div>content</div>
-				          </List.Item>
-				          <div className="img-container"> 
-					        <Upload
-					          customRequest = {this.handleUpload}
-					          listType="picture-card"
-					          fileList={fileList}
-					          onPreview={this.handlePreview}
-					          onChange={this.handleChange}
-					        >
-					          {uploadButton}
-					        </Upload>
-					        <Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
-					          <img alt="example" style={{ width: '100%' }} src={previewImage} />
-					        </Modal>
-				          </div>
-			          </div>
-			        )}
-			    />
+			        >
+		          <List.Item actions={[<a><Icon type="left" onClick={()=>this.previousDay()} /></a>, <a><Icon type="right" onClick={()=>this.nextDay()}/></a>]}>
+		            <List.Item.Meta
+		              avatar={<Avatar style={{backgroundColor : colorList[0] ,verticalAlign: 'middle'}} size="large">{day.title.slice(0,2)}</Avatar>}
+		              title={<a href="https://ant.design">{day.title}</a>}
+		              description={moment(this.state.date).format("MMM Do YY")}
+		            />
+		            <div><DatePicker value={moment(this.state.date)} onChange={this.handleDateChange} placeholder="Select Date" /></div>
+		          </List.Item>
+		          <div className="img-container"> 
+			        <Upload
+			          customRequest = {this.handleUpload}
+			          listType="picture-card"
+			          fileList={fileList}
+			          onPreview={this.handlePreview}
+			          onChange={this.handleChange}
+			        >
+			          {uploadButton}
+			        </Upload>
+			        <Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
+			          <img alt="example" style={{ width: '100%' }} src={previewImage} />
+			        </Modal>
+		          </div>
+			    </List>
+			   
         	</Content>
         	<Footer className="footer">Footer</Footer>
       	</Layout>
