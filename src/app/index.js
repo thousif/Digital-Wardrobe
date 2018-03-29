@@ -15,7 +15,7 @@ import { List,
 import moment from 'moment'
 import './index.css'
 const { Header, Footer, Content } = Layout;
-const colorList = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae'];
+const colorList = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae','#FF3333','#97AF83','#8FCCFF','#8F00F8','#FF5FC6','#B03060'];
 
 class App extends Component {
   constructor(props){
@@ -23,6 +23,7 @@ class App extends Component {
     console.log(this.props);
     this.state =  {
 	    date : moment().format('YYYYMMDD'),
+	    theme : colorList[this.getRandomInt()],
 	    day : {
 	    	title : moment().calendar(null, {
 			    sameDay: '[Today]',
@@ -39,6 +40,9 @@ class App extends Component {
 	}
   }
 
+  getRandomInt = () => {
+	  return Math.floor(Math.random() * Math.floor(9));
+  }
 
   // function to retreive base64 of the uploaded image
   getBase64FromImageUrl = (file,cb) => {
@@ -270,8 +274,11 @@ class App extends Component {
 
   handleDateChange = (t) => {
   	console.log(moment(t).format('YYYYMMDD'));
+  	let theme = colorList[this.getRandomInt()]
+  	
   	this.setState({
   		...this.state,
+  		theme,
   		date : moment(t).format('YYYYMMDD'),
   		day : {
 	    	title : moment(t).calendar(null, {
@@ -290,9 +297,10 @@ class App extends Component {
 
   previousDay = () => {
   	let date = moment(this.state.date).subtract(1,'days').format('YYYYMMDD')
+  	let theme = colorList[this.getRandomInt()]
   	this.setState({
   		...this.state,
-  		date,
+  		date,theme,
 	    day : {
 	    	title : moment(date).calendar(null, {
 			    sameDay: '[Today]',
@@ -310,9 +318,10 @@ class App extends Component {
 
   nextDay = () => {
   	let date = moment(this.state.date).add(1,'days').format('YYYYMMDD')
+  	let theme = colorList[this.getRandomInt()]
   	this.setState({
   		...this.state,
-  		date,
+  		date,theme,
 	    day : {
 	    	title : moment(date).calendar(null, {
 			    sameDay: '[Today]',
@@ -329,7 +338,7 @@ class App extends Component {
   }
 
   render() {
-    const { loading, loadingMore, showLoadingMore, day } = this.state;
+    const { loading, loadingMore, showLoadingMore, day,theme } = this.state;
     const loadMore = showLoadingMore ? (
       <div style={{ textAlign: 'center', marginTop: 12, height: 32, lineHeight: '32px' }}>
         {loadingMore && <Spin />}
@@ -348,7 +357,7 @@ class App extends Component {
       	<Layout className="layout">
         	<Header className="header">
         		<h1 className="title">Digital Wardrobe</h1>
-        		<hr className="title-bar"/>
+        		<hr style={{borderColor : theme}} className="title-bar"/>
         	</Header>
         	<Content className="content">
         		<List
@@ -364,7 +373,7 @@ class App extends Component {
 			        </Tooltip>	
 			        ]}>
 		            <List.Item.Meta
-		              avatar={<Avatar style={{backgroundColor : colorList[0] ,verticalAlign: 'middle'}} size="large">{day.title.slice(0,2)}</Avatar>}
+		              avatar={<Avatar style={{backgroundColor : theme ,verticalAlign: 'middle'}} size="large">{day.title.slice(0,2)}</Avatar>}
 		              title={<a href="">{day.title}</a>}
 		              description={moment(this.state.date).format("MMM Do YY")}
 		            />
