@@ -1,1 +1,1 @@
-web npm run build && npm deploy
+web npm install && npm deploy
