@@ -38,6 +38,8 @@ class App extends Component {
 	}
   }
 
+
+  // function to retreive base64 of the uploaded image
   getBase64FromImageUrl = (file,cb) => {
     var fileReader = new FileReader();
 
@@ -73,6 +75,8 @@ class App extends Component {
   }
 
   componentDidMount() {
+    // lets start
+    // check if there is an existing database and update state .
     this.getStore();
   }
 
@@ -84,6 +88,7 @@ class App extends Component {
 	    return;
 	}
 
+	// since 
 	const self = this;
 
 	const open = indexedDB.open('myDatabase', 1 ,function(upgrade){
@@ -249,6 +254,7 @@ class App extends Component {
   }
 
   handleUpload = (file) => {
+  	if(file.type)
   	this.getBase64FromImageUrl(file.file,this.storeToDB)
   }
 
@@ -339,7 +345,7 @@ class App extends Component {
       <div >
       	<Layout className="layout">
         	<Header className="header">
-        		<h1 className="title">Iclap</h1>
+        		<h1 className="title">Digital Wardrobe</h1>
         		<hr className="title-bar"/>
         	</Header>
         	<Content className="content">
@@ -350,7 +356,7 @@ class App extends Component {
 		          <List.Item actions={[<a><Icon type="left" onClick={()=>this.previousDay()} /></a>, <a><Icon type="right" onClick={()=>this.nextDay()}/></a>]}>
 		            <List.Item.Meta
 		              avatar={<Avatar style={{backgroundColor : colorList[0] ,verticalAlign: 'middle'}} size="large">{day.title.slice(0,2)}</Avatar>}
-		              title={<a href="https://ant.design">{day.title}</a>}
+		              title={<a href="">{day.title}</a>}
 		              description={moment(this.state.date).format("MMM Do YY")}
 		            />
 		            <div><DatePicker value={moment(this.state.date)} onChange={this.handleDateChange} placeholder="Select Date" /></div>
@@ -359,6 +365,7 @@ class App extends Component {
 			        <Upload
 			          customRequest = {this.handleUpload}
 			          listType="picture-card"
+			          accept="image/*"
 			          fileList={fileList}
 			          onPreview={this.handlePreview}
 			          onChange={this.handleChange}
@@ -372,7 +379,7 @@ class App extends Component {
 			    </List>
 			   
         	</Content>
-        	<Footer className="footer">Footer</Footer>
+        	{/*<Footer className="footer">Footer</Footer>*/}
       	</Layout>
       </div>
     );
