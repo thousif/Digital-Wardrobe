@@ -36,6 +36,7 @@ class App extends Component {
 	    },
 	    previewVisible: false,
 	    previewImage: '',
+	    previewDetails : true,
 	    fileList: [],
 	}
   }
@@ -188,6 +189,7 @@ class App extends Component {
 
 				self.setState({
 					...this.state,
+					previewDetails : true,
 					fileList
 				})
 			} else {
@@ -252,6 +254,8 @@ class App extends Component {
 
 
   handleCancel = () => this.setState({ previewVisible: false })
+  
+  handleDetailsCancel = () => this.setState({ previewDetails: false })
 
   handlePreview = (file) => {
     this.setState({
@@ -345,7 +349,7 @@ class App extends Component {
         {!loadingMore && <Button onClick={this.onLoadMore}>loading more</Button>}
       </div>
     ) : null;
-    const { previewVisible, previewImage, fileList } = this.state;
+    const { previewVisible, previewImage, fileList ,previewDetails } = this.state;
     const uploadButton = (
       <div>
         <Icon type="plus" />
@@ -394,6 +398,9 @@ class App extends Component {
 			          <img alt="example" style={{ width: '100%' }} src={previewImage} />
 			        </Modal>
 		          </div>
+		          <Modal visible={previewDetails} onCancel={this.handleDetailsCancel} >
+		          	<h1> Good Morning : image details </h1>
+		          </Modal>
 			    </List>
 			   
         	</Content>
