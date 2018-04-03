@@ -11,13 +11,21 @@ import { List,
 	message, 
 	DatePicker,
 	Tooltip,
-	notification } from 'antd'
+	Form,
+	Input,
+	Radio,
+	notification,
+	Select } from 'antd'
 import moment from 'moment'
 import './index.css'
 const { Header, Footer, Content } = Layout;
 const colorList = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae','#FF3333','#97AF83','#8FCCFF','#8F00F8','#FF5FC6','#B03060'];
+const FormItem = Form.Item;
+const Option = Select.Option;
 
-class App extends Component {
+const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+class AppForm extends Component {
   constructor(props){
     super(props);
     console.log(this.props);
@@ -32,12 +40,14 @@ class App extends Component {
 			    lastDay: '[Yesterday]',
 			    lastWeek: '[Last] dddd',
 			    sameElse: 'DD/MM/YYYY'
-			}) 
+			}),
+			label : 'All' 
 	    },
 	    previewVisible: false,
 	    previewImage: '',
-	    previewDetails : true,
+	    previewDetails : false,
 	    fileList: [],
+	    file : {}
 	}
   }
 
@@ -103,7 +113,7 @@ class App extends Component {
 	open.onupgradeneeded = function() {
 	    var db = open.result;
 	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
-	    var index = store.createIndex("date" , "date" , {unique : false});
+	    var index = store.createIndex("day" , "day" , {unique : false});
 	};
 
   	open.onerror = (err) => {
@@ -115,9 +125,9 @@ class App extends Component {
 	    var db = open.result;
 	    var tx = db.transaction("MyObjectStore", "readwrite");
 	    var store = tx.objectStore("MyObjectStore");
-	    var index = store.index("date");
+	    var index = store.index("day");
 
-	    var getAll = index.getAll(self.state.date);
+	    var getAll = index.getAll(self.state.day.label);
 	    
 	    getAll.onsuccess = function() {
 	    	console.log(getAll);
@@ -141,6 +151,27 @@ class App extends Component {
 	        db.close();
 	    };
 	}		
+  }
+
+  confirm = (file) => {
+  	this.setState({
+  		previewDetails : true,
+  		file,
+  	})
+  }
+
+  handleOk = (e) => {
+  	e.preventDefault();
+    this.props.form.validateFields((err, values) => {
+      if (!err) {
+        console.log('Received values of form: ', values);
+        this.storeToDB(this.state.file);
+        this.setState({
+        	previewDetails : false,
+        	file : {}
+        })
+      }
+    });
   }
 
   storeToDB = (file) => {
@@ -186,10 +217,8 @@ class App extends Component {
 
 			if(target >= 0){
 				fileList[target] = file;
-
 				self.setState({
 					...this.state,
-					previewDetails : true,
 					fileList
 				})
 			} else {
@@ -265,7 +294,7 @@ class App extends Component {
   }
 
   handleUpload = (file) => {
-  	this.getBase64FromImageUrl(file.file,this.storeToDB)
+  	this.getBase64FromImageUrl(file.file,this.confirm)
   }
 
   handleChange = ({file, fileList }) => {
@@ -343,12 +372,15 @@ class App extends Component {
 
   render() {
     const { loading, loadingMore, showLoadingMore, day,theme } = this.state;
+    const { form } = this.props;
+    const { getFieldDecorator } = form;
     const loadMore = showLoadingMore ? (
       <div style={{ textAlign: 'center', marginTop: 12, height: 32, lineHeight: '32px' }}>
         {loadingMore && <Spin />}
         {!loadingMore && <Button onClick={this.onLoadMore}>loading more</Button>}
       </div>
     ) : null;
+    console.log(this.state);
     const { previewVisible, previewImage, fileList ,previewDetails } = this.state;
     const uploadButton = (
       <div>
@@ -398,11 +430,30 @@ class App extends Component {
 			          <img alt="example" style={{ width: '100%' }} src={previewImage} />
 			        </Modal>
 		          </div>
-		          <Modal visible={previewDetails} onCancel={this.handleDetailsCancel} >
-		          	<h1> Good Morning : image details </h1>
+		          <Modal 
+		          visible={previewDetails} 
+		          onCancel={this.handleDetailsCancel}
+		          onOk = {this.handleOk} >
+		          	<Form layout="vertical">
+			            <FormItem label="Name">
+			              {getFieldDecorator('name', {
+			                rules: [{ required: true, message: 'Please input the name for image !' }],
+			              })(
+			                <Input />
+			              )}
+			            </FormItem>
+			            <FormItem label="Assign to a day">
+			              {getFieldDecorator('day')(
+			              	<Select placeholder = "Select a day for this cloth" >
+			              		{days.length > 0 && days.map(day => 
+			              			<Option key={day} value={day}>{day}</Option>
+			              		)}
+			              	</Select>
+			              	)}
+			            </FormItem>
+			        </Form>
 		          </Modal>
 			    </List>
-			   
         	</Content>
         	{/*<Footer className="footer">Footer</Footer>*/}
       	</Layout>
@@ -410,5 +461,7 @@ class App extends Component {
     );
   }
 }
+
+const App = Form.create()(AppForm);
 
 export default App;
