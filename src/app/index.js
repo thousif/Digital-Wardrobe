@@ -159,6 +159,7 @@ class AppForm extends Component {
         	previewDetails : false,
         	file : {}
         })
+        this.props.form.resetFields();
       }
     });
   }
@@ -236,21 +237,19 @@ class AppForm extends Component {
 
 	const self = this;
 	
-	const open = indexedDB.open('myDatabase', 1);
+	const open = indexedDB.open('myDatabase', 2);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
-	    var index = store.createIndex("date" , "date" , {unique : false});
+	    var store = db.createObjectStore("OutfitStore", {keyPath: "id"});
+	    var index = store.createIndex("day" , "day" , {unique : false});
 	};
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("MyObjectStore", "readwrite");
-	    var store = tx.objectStore("MyObjectStore");
-	    var index = store.index("date");
-
-	    store.put({id: file.uid , uri : file , date : self.state.date});
+	    var tx = db.transaction("OutfitStore", "readwrite");
+	    var store = tx.objectStore("OutfitStore");
+	    var index = store.index("day");
 
 	    var getImage = store.delete(file.uid);
 
