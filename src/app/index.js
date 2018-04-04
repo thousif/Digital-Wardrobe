@@ -370,7 +370,7 @@ class AppForm extends Component {
       <div >
       	<Layout className="layout">
         	<Header className="header">
-        		<h1 className="title">Demo</h1>
+        		<h1 className="title">Digital Wardrobe</h1>
         		<hr style={{borderColor : theme}} className="title-bar"/>
         	</Header>
         	<Content className="content">
