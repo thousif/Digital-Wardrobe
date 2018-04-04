@@ -11,32 +11,32 @@ import { List,
 	message, 
 	DatePicker,
 	Tooltip,
-	notification } from 'antd'
+	Form,
+	Input,
+	Radio,
+	notification,
+	Select } from 'antd'
 import moment from 'moment'
 import './index.css'
 const { Header, Footer, Content } = Layout;
 const colorList = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae','#FF3333','#97AF83','#8FCCFF','#8F00F8','#FF5FC6','#B03060'];
+const FormItem = Form.Item;
+const Option = Select.Option;
 
-class App extends Component {
+const days = ['All','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+class AppForm extends Component {
   constructor(props){
     super(props);
     console.log(this.props);
     this.state =  {
-	    date : moment().format('YYYYMMDD'),
 	    theme : colorList[this.getRandomInt()],
-	    day : {
-	    	title : moment().calendar(null, {
-			    sameDay: '[Today]',
-			    nextDay: '[Tomorrow]',
-			    nextWeek: 'dddd',
-			    lastDay: '[Yesterday]',
-			    lastWeek: '[Last] dddd',
-			    sameElse: 'DD/MM/YYYY'
-			}) 
-	    },
+	    day : 'All', 
 	    previewVisible: false,
 	    previewImage: '',
+	    previewDetails : false,
 	    fileList: [],
+	    file : {}
 	}
   }
 
@@ -86,7 +86,7 @@ class App extends Component {
     this.getStore();
   }
 
-  getStore = () => {
+  getStore = (day) => {
   	console.log("fetching all stored images");
   	if (!('indexedDB' in window)) {
 	    console.log('This browser doesn\'t support IndexedDB');
@@ -97,12 +97,12 @@ class App extends Component {
 	// passing state to local scope 
 	const self = this;
 
-	const open = indexedDB.open('myDatabase', 1);
+	const open = indexedDB.open('myDatabase', 2);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
-	    var index = store.createIndex("date" , "date" , {unique : false});
+	    var store = db.createObjectStore("OutfitStore", {keyPath: "id"});
+	    var index = store.createIndex("day" , "day" , {unique : false});
 	};
 
   	open.onerror = (err) => {
@@ -112,11 +112,11 @@ class App extends Component {
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("MyObjectStore", "readwrite");
-	    var store = tx.objectStore("MyObjectStore");
-	    var index = store.index("date");
+	    var tx = db.transaction("OutfitStore", "readwrite");
+	    var store = tx.objectStore("OutfitStore");
+	    var index = store.index("day");
 
-	    var getAll = index.getAll(self.state.date);
+	    var getAll = index.getAll(day);
 	    
 	    getAll.onsuccess = function() {
 	    	console.log(getAll);
@@ -142,7 +142,28 @@ class App extends Component {
 	}		
   }
 
-  storeToDB = (file) => {
+  confirm = (file) => {
+  	this.setState({
+  		previewDetails : true,
+  		file,
+  	})
+  }
+
+  handleOk = (e) => {
+  	e.preventDefault();
+    this.props.form.validateFields((err, values) => {
+      if (!err) {
+        console.log('Received values of form: ', values);
+        this.storeToDB(this.state.file,values.day);
+        this.setState({
+        	previewDetails : false,
+        	file : {}
+        })
+      }
+    });
+  }
+
+  storeToDB = (file,day) => {
   	if (!('indexedDB' in window)) {
 	    console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
@@ -157,21 +178,21 @@ class App extends Component {
 		status : 'done'
 	}
 	
-	const open = indexedDB.open('myDatabase', 1);
+	const open = indexedDB.open('myDatabase', 2);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
-	    var index = store.createIndex("date" , "date" , {unique : false});
+	    var store = db.createObjectStore("OutfitStore", {keyPath: "id"});
+	    var index = store.createIndex("day" , "day" , {unique : false});
 	};
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("MyObjectStore", "readwrite");
-	    var store = tx.objectStore("MyObjectStore");
-	    var index = store.index("date");
+	    var tx = db.transaction("OutfitStore", "readwrite");
+	    var store = tx.objectStore("OutfitStore");
+	    var index = store.index("day");
 
-	    store.put({id: file.uid , uri : file , date : self.state.date});
+	    store.put({id: file.uid , uri : file , day : day || self.state.day});
 
 	    var saveImage = index.get(file.uid);
 
@@ -185,7 +206,6 @@ class App extends Component {
 
 			if(target >= 0){
 				fileList[target] = file;
-
 				self.setState({
 					...this.state,
 					fileList
@@ -252,6 +272,8 @@ class App extends Component {
 
 
   handleCancel = () => this.setState({ previewVisible: false })
+  
+  handleDetailsCancel = () => this.setState({ previewDetails: false })
 
   handlePreview = (file) => {
     this.setState({
@@ -261,7 +283,7 @@ class App extends Component {
   }
 
   handleUpload = (file) => {
-  	this.getBase64FromImageUrl(file.file,this.storeToDB)
+  	this.getBase64FromImageUrl(file.file,this.confirm)
   }
 
   handleChange = ({file, fileList }) => {
@@ -272,80 +294,72 @@ class App extends Component {
   	this.setState({ fileList })
   }
 
-  handleDateChange = (t) => {
-  	console.log(moment(t).format('YYYYMMDD'));
-  	let theme = colorList[this.getRandomInt()]
+  handleDayChange = (day) => {
+  	console.log(day);
+  	// console.log(moment(t).format('YYYYMMDD'));
+  	// let theme = colorList[this.getRandomInt()]
   	
-  	this.setState({
-  		...this.state,
-  		theme,
-  		date : moment(t).format('YYYYMMDD'),
-  		day : {
-	    	title : moment(t).calendar(null, {
-			    sameDay: '[Today]',
-			    nextDay: '[Tomorrow]',
-			    nextWeek: 'dddd',
-			    lastDay: '[Yesterday]',
-			    lastWeek: '[Last] dddd',
-			    sameElse: 'DD/MM/YYYY'
-			}) 
-	    },
-  	},function(){
-  		this.getStore();
+  	this.setState({day},function(){
+  		if(day === "All"){
+  			this.getStore()
+  			return;
+  		}
+  		this.getStore(day);
   	})
   }
 
   previousDay = () => {
-  	let date = moment(this.state.date).subtract(1,'days').format('YYYYMMDD')
   	let theme = colorList[this.getRandomInt()]
+  	let prevDay = days.indexOf(this.state.day);
+  	
+  	if(prevDay < 0) return;
+  	else if(prevDay === 0) prevDay = days.length-1;
+  	else prevDay--;
+  	
   	this.setState({
-  		...this.state,
-  		date,theme,
-	    day : {
-	    	title : moment(date).calendar(null, {
-			    sameDay: '[Today]',
-			    nextDay: '[Tomorrow]',
-			    nextWeek: 'dddd',
-			    lastDay: '[Yesterday]',
-			    lastWeek: '[Last] dddd',
-			    sameElse: 'DD/MM/YYYY'
-			}) 
-	    },
+  		theme,
+	    day : days[prevDay]
   	},function(){
-  		this.getStore()
+  		if(this.state.day === "All"){
+  			this.getStore()
+  			return;
+  		}
+  		this.getStore(this.state.day)
   	})
   }
 
   nextDay = () => {
-  	let date = moment(this.state.date).add(1,'days').format('YYYYMMDD')
   	let theme = colorList[this.getRandomInt()]
+  	let nextDay = days.indexOf(this.state.day);
+  	
+  	if(nextDay < 0) return;
+  	else if(nextDay === days.length-1) nextDay = 0;
+  	else nextDay++;
+  	
   	this.setState({
-  		...this.state,
-  		date,theme,
-	    day : {
-	    	title : moment(date).calendar(null, {
-			    sameDay: '[Today]',
-			    nextDay: '[Tomorrow]',
-			    nextWeek: 'dddd',
-			    lastDay: '[Yesterday]',
-			    lastWeek: '[Last] dddd',
-			    sameElse: 'DD/MM/YYYY'
-			}) 
-	    },
+  		theme,
+	    day : days[nextDay]
   	},function(){
-  		this.getStore()
+  		if(this.state.day === "All"){
+  			this.getStore()
+  			return;
+  		}
+  		this.getStore(this.state.day)
   	})
   }
 
   render() {
     const { loading, loadingMore, showLoadingMore, day,theme } = this.state;
+    const { form } = this.props;
+    const { getFieldDecorator } = form;
     const loadMore = showLoadingMore ? (
       <div style={{ textAlign: 'center', marginTop: 12, height: 32, lineHeight: '32px' }}>
         {loadingMore && <Spin />}
         {!loadingMore && <Button onClick={this.onLoadMore}>loading more</Button>}
       </div>
     ) : null;
-    const { previewVisible, previewImage, fileList } = this.state;
+    console.log(this.state);
+    const { previewVisible, previewImage, fileList ,previewDetails } = this.state;
     const uploadButton = (
       <div>
         <Icon type="plus" />
@@ -356,7 +370,7 @@ class App extends Component {
       <div >
       	<Layout className="layout">
         	<Header className="header">
-        		<h1 className="title">Digital Wardrobe</h1>
+        		<h1 className="title">Demo</h1>
         		<hr style={{borderColor : theme}} className="title-bar"/>
         	</Header>
         	<Content className="content">
@@ -373,11 +387,24 @@ class App extends Component {
 			        </Tooltip>	
 			        ]}>
 		            <List.Item.Meta
-		              avatar={<Avatar style={{backgroundColor : theme ,verticalAlign: 'middle'}} size="large">{day.title.slice(0,2)}</Avatar>}
-		              title={<a href="">{day.title}</a>}
-		              description={moment(this.state.date).format("MMM Do YY")}
+		              avatar={<Avatar style={{backgroundColor : theme ,verticalAlign: 'middle'}} size="large">{day.slice(0,2)}</Avatar>}
+		              title={<a href="">{day}</a>}
+		              description="Outfits"
 		            />
-		            <div><DatePicker value={moment(this.state.date)} onChange={this.handleDateChange} placeholder="Select Date" /></div>
+		            <div>
+		            	<Select
+						    showSearch
+						    style={{ width: 200 }}
+						    placeholder="Select a day"
+						    optionFilterProp="children"
+						    onChange={this.handleDayChange}
+						    filterOption={(input, option) => option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+						  >
+						    {days.length > 0 && days.map(day => 
+		              			<Option key={day} value={day}>{day}</Option>
+		              		)}
+						  </Select>
+		            </div>
 		          </List.Item>
 		          <div className="img-container"> 
 			        <Upload
@@ -394,8 +421,30 @@ class App extends Component {
 			          <img alt="example" style={{ width: '100%' }} src={previewImage} />
 			        </Modal>
 		          </div>
+		          <Modal 
+		          visible={previewDetails} 
+		          onCancel={this.handleDetailsCancel}
+		          onOk = {this.handleOk} >
+		          	<Form layout="vertical">
+			            <FormItem label="Name">
+			              {getFieldDecorator('name', {
+			                rules: [{ required: true, message: 'Please input the name for image !' }],
+			              })(
+			                <Input />
+			              )}
+			            </FormItem>
+			            <FormItem label="Assign to a day">
+			              {getFieldDecorator('day')(
+			              	<Select placeholder = "Select a day for this cloth" >
+			              		{days.length > 0 && days.map(day => 
+			              			<Option key={day} value={day}>{day}</Option>
+			              		)}
+			              	</Select>
+			              	)}
+			            </FormItem>
+			        </Form>
+		          </Modal>
 			    </List>
-			   
         	</Content>
         	{/*<Footer className="footer">Footer</Footer>*/}
       	</Layout>
@@ -403,5 +452,7 @@ class App extends Component {
     );
   }
 }
+
+const App = Form.create()(AppForm);
 
 export default App;
