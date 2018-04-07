@@ -12,6 +12,8 @@ import { List,
 	DatePicker,
 	Tooltip,
 	Form,
+	Row,
+	Col,
 	Input,
 	Radio,
 	notification,
@@ -31,7 +33,7 @@ class AppForm extends Component {
     console.log(this.props);
     this.state =  {
 	    theme : colorList[this.getRandomInt()],
-	    day : 'All', 
+	    day : 'Monday', 
 	    previewVisible: false,
 	    previewImage: '',
 	    previewDetails : false,
@@ -83,7 +85,12 @@ class AppForm extends Component {
   componentDidMount() {
     // lets start
     // check if there is an existing database and update state .
-    this.getStore();
+    let {day} = this.state;
+    if(day === "All"){
+		this.getStore()
+		return;
+	}
+	this.getStore(day);
   }
 
   getStore = (day) => {
@@ -236,21 +243,19 @@ class AppForm extends Component {
 
 	const self = this;
 	
-	const open = indexedDB.open('myDatabase', 1);
+	const open = indexedDB.open('myDatabase', 2);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("MyObjectStore", {keyPath: "id"});
-	    var index = store.createIndex("date" , "date" , {unique : false});
+	    var store = db.createObjectStore("OutfitStore", {keyPath: "id"});
+	    var index = store.createIndex("day" , "day" , {unique : false});
 	};
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("MyObjectStore", "readwrite");
-	    var store = tx.objectStore("MyObjectStore");
-	    var index = store.index("date");
-
-	    store.put({id: file.uid , uri : file , date : self.state.date});
+	    var tx = db.transaction("OutfitStore", "readwrite");
+	    var store = tx.objectStore("OutfitStore");
+	    var index = store.index("day");
 
 	    var getImage = store.delete(file.uid);
 
@@ -282,6 +287,13 @@ class AppForm extends Component {
     });
   }
 
+  handleDelete = (file) => {
+  	let {fileList} = this.state;
+  	fileList = fileList.filter(f => f.uid != file.uid);
+  	this.deleteFromDB(file);
+  	this.setState({fileList})
+  }
+
   handleUpload = (file) => {
   	this.getBase64FromImageUrl(file.file,this.confirm)
   }
@@ -296,9 +308,6 @@ class AppForm extends Component {
 
   handleDayChange = (day) => {
   	console.log(day);
-  	// console.log(moment(t).format('YYYYMMDD'));
-  	// let theme = colorList[this.getRandomInt()]
-  	
   	this.setState({day},function(){
   		if(day === "All"){
   			this.getStore()
@@ -363,7 +372,9 @@ class AppForm extends Component {
     const uploadButton = (
       <div>
         <Icon type="plus" />
-        <div className="ant-upload-text">Add</div>
+        <div className="ant-upload-text">
+        	{ day === 'All' ? 'Upload' : 'Add From Wardrobe'} 
+        </div>
       </div>
     );
     return (
@@ -406,21 +417,53 @@ class AppForm extends Component {
 						  </Select>
 		            </div>
 		          </List.Item>
-		          <div className="img-container"> 
-			        <Upload
-			          customRequest = {this.handleUpload}
-			          listType="picture-card"
-			          accept="image/*"
-			          fileList={fileList}
-			          onPreview={this.handlePreview}
-			          onChange={this.handleChange}
-			        >
-			          {uploadButton}
-			        </Upload>
-			        <Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
-			          <img alt="example" style={{ width: '100%' }} src={previewImage} />
-			        </Modal>
-		          </div>
+		          	{day === "All" ? 
+						<div className="img-container"> 
+						<Upload
+						  customRequest = {this.handleUpload}
+						  listType="picture-card"
+						  accept="image/*"
+						  fileList={fileList}
+						  onPreview={this.handlePreview}
+						  onChange={this.handleChange}
+						>
+						  {uploadButton}
+						</Upload>
+						<Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
+						  <img alt="example" style={{ width: '100%' }} src={previewImage} />
+						</Modal>
+						</div>
+			        :
+			       		<div className="img-container"> 
+					        <Row>
+					        {fileList.length > 0 && fileList.map(outfit => 
+					        	<Col key={outfit.uid} span={4}>
+						        	<div key={outfit.uid} className="outfit-holder">
+						        		<div className="outfit-image">
+						        			<img className="image" src={outfit.url} />
+						        			<span className="actions">
+						        				<i className="anticon anticon-eye-o" 
+						        				title="Preview file" 
+						        				onClick={()=>{this.handlePreview(outfit)}}></i>
+						        				<i className="anticon anticon-delete" 
+						        				title="Remove file"
+						        				onClick={()=>{this.handleDelete(outfit)}}></i>
+						        			</span>
+						        		</div>
+						        	</div>
+								</Col>					        	
+					        )}
+					        <Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
+							  <img alt="example" style={{ width: '100%' }} src={previewImage} />
+							</Modal>
+					        <Col span={4}>
+					        	<div className="outfit-holder">
+					        		{uploadButton}
+					        	</div>
+					        </Col>
+					        </Row>
+				        </div> 	
+		      	  	}
 		          <Modal 
 		          visible={previewDetails} 
 		          onCancel={this.handleDetailsCancel}
