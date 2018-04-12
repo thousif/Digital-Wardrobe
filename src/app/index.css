@@ -105,3 +105,14 @@
     top : 0;
     left : 0;
 }
+
+.outfit-dashed-btn{
+    width: 70%;
+    padding: 12px 0;
+    overflow: hidden;
+    height: auto;
+}
+
+.outfit-dashed-btn .ant-upload-text p{
+    white-space: normal;
+}

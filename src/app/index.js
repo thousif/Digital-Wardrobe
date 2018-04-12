@@ -15,6 +15,7 @@ import { List,
 	Row,
 	Col,
 	Input,
+	Checkbox,
 	Radio,
 	notification,
 	Select } from 'antd'
@@ -37,6 +38,7 @@ class AppForm extends Component {
 	    previewVisible: false,
 	    previewImage: '',
 	    previewDetails : false,
+	    previewOutfitSelector : false,
 	    fileList: [],
 	    file : {}
 	}
@@ -171,6 +173,13 @@ class AppForm extends Component {
     });
   }
 
+  handleOutfitSelectorOk = (e) => {
+  	e.preventDefault();
+  	this.props.form.validateFields((err,values) => {
+  		console.log(values);
+  	})
+  }
+
   storeToDB = (file,day) => {
   	if (!('indexedDB' in window)) {
 	    console.log('This browser doesn\'t support IndexedDB');
@@ -281,6 +290,10 @@ class AppForm extends Component {
   
   handleDetailsCancel = () => this.setState({ previewDetails: false })
 
+  handleOutfitSelectorCancel = () => this.setState({ handleOutfitSelectorCancel : false })
+
+  openOutfitSelector = () => this.setState({ previewOutfitSelector : true })
+
   handlePreview = (file) => {
     this.setState({
       previewImage: file.url || file.thumbUrl,
@@ -369,15 +382,23 @@ class AppForm extends Component {
       </div>
     ) : null;
     console.log(this.state);
-    const { previewVisible, previewImage, fileList ,previewDetails } = this.state;
-    const uploadButton = (
-      <div>
-        <Icon type="plus" />
-        <div className="ant-upload-text">
-        	{ day === 'All' ? 'Upload' : 'Add From Wardrobe'} 
-        </div>
-      </div>
-    );
+    const { previewVisible, previewImage, fileList ,previewDetails, previewOutfitSelector } = this.state;
+    const uploadButton = ( (day === 'All') ? 
+	 	<div >
+        	<Icon type="plus" />
+        	<div className="ant-upload-text">
+        		Upload 
+        	</div>
+      	</div>
+	: 
+		<Button type="dashed" className="outfit-dashed-btn" onClick={this.openOutfitSelector}>
+        	<div className="ant-upload-text">
+        		<Icon type="plus" />
+        		<p>Add From Wardrobe</p>
+        	</div> 
+      	</Button>
+	)
+      
     return (
       <div >
       	<Layout className="layout">
@@ -458,7 +479,7 @@ class AppForm extends Component {
 							  <img alt="example" style={{ width: '100%' }} src={previewImage} />
 							</Modal>
 					        <Col span={4}>
-					        	<div className="outfit-holder">
+					        	<div className="">
 					        		{uploadButton}
 					        	</div>
 					        </Col>
@@ -484,6 +505,26 @@ class AppForm extends Component {
 			              			<Option key={day} value={day}>{day}</Option>
 			              		)}
 			              	</Select>
+			              	)}
+			            </FormItem>
+			        </Form>
+		          </Modal>
+		          <Modal 
+		          visible={previewOutfitSelector} 
+		          onCancel={this.handleOutfitSelectorCancel}
+		          onOk = {this.handleOutfitSelectorOk} >
+		          	<Form layout="vertical">
+			            <FormItem label="Assign to a day">
+			              {getFieldDecorator('day')(
+			              	<Checkbox.Group >
+							    <Row>
+							      <Col span={8}><Checkbox value="A">A</Checkbox></Col>
+							      <Col span={8}><Checkbox value="B">B</Checkbox></Col>
+							      <Col span={8}><Checkbox value="C">C</Checkbox></Col>
+							      <Col span={8}><Checkbox value="D">D</Checkbox></Col>
+							      <Col span={8}><Checkbox value="E">E</Checkbox></Col>
+							    </Row>
+							  </Checkbox.Group>
 			              	)}
 			            </FormItem>
 			        </Form>
