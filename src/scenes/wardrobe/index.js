@@ -20,7 +20,7 @@ import { List,
 	notification,
 	Select } from 'antd'
 import moment from 'moment'
-import './index.css'
+import '../../styles/index.css'
 const { Header, Footer, Content } = Layout;
 const colorList = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae','#FF3333','#97AF83','#8FCCFF','#8F00F8','#FF5FC6','#B03060'];
 const FormItem = Form.Item;
@@ -34,7 +34,7 @@ class AppForm extends Component {
     console.log(this.props);
     this.state =  {
 	    theme : colorList[this.getRandomInt()],
-	    day : 'Monday', 
+	    day : 'All', 
 	    previewVisible: false,
 	    previewImage: '',
 	    previewDetails : false,
@@ -106,12 +106,12 @@ class AppForm extends Component {
 	// passing state to local scope 
 	const self = this;
 
-	const open = indexedDB.open('myDatabase', 2);
+	const open = indexedDB.open('myDatabase', 4);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("OutfitStore", {keyPath: "id"});
-	    var index = store.createIndex("day" , "day" , {unique : false});
+	    var store = db.createObjectStore("wardrobe4", {keyPath: "id"});
+	    var index = store.createIndex("days" , "days" , {unique : false,multiEntry : true});
 	};
 
   	open.onerror = (err) => {
@@ -121,17 +121,21 @@ class AppForm extends Component {
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("OutfitStore", "readwrite");
-	    var store = tx.objectStore("OutfitStore");
-	    var index = store.index("day");
+	    var tx = db.transaction("wardrobe4", "readwrite");
+	    var store = tx.objectStore("wardrobe4");
+	    var index = store.index("days");
 
-	    var getAll = index.getAll(day);
+	    var getAllByDay = index.getAll(days);
 	    
-	    getAll.onsuccess = function() {
+	    var getAll = index.getAll();
+
+	    console.log('check');
+	    
+	    getAllByDay.onsuccess = function() {
 	    	console.log(getAll);
 	    	//updating state with data retrieved from database
-	   		if(getAll.result && getAll.result.length >= 0){
-	   			let fileList = getAll.result.map(data => data.uri);
+	   		if(getAllByDay.result && getAllByDay.result.length >= 0){
+	   			let fileList = getAllByDay.result.map(data => data.uri);
 	   			self.setState({
 	   				...self.state,
 	   				fileList
@@ -139,7 +143,26 @@ class AppForm extends Component {
 	   		}
 	    };
 
+	    getAll.onsuccess = function() {
+	   		if(getAll.result && getAll.result.length >= 0){
+	   			console.log('getAll', getAll);
+	   			if(getAll.result && getAll.result.length >= 0){
+		   			let fileList = getAll.result.map(data => data.uri);
+		   			self.setState({
+		   				...self.state,
+		   				fileList
+		   			})
+		   		}
+	   			// let allFiles = getAll.result.map(data)
+	   		}
+	    }
+
 	    getAll.onerror = function() {
+	    	message.error("Error! Try again later");
+	    	console.log(getAll.error);
+	    }
+
+	    getAllByDay.onerror = function() {
 	    	message.error("Error! Try again later");
 	    	console.log(getAll.error);
 	    }
@@ -195,21 +218,21 @@ class AppForm extends Component {
 		status : 'done'
 	}
 	
-	const open = indexedDB.open('myDatabase', 2);
+	const open = indexedDB.open('myDatabase', 4);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("OutfitStore", {keyPath: "id"});
-	    var index = store.createIndex("day" , "day" , {unique : false});
+	    var store = db.createObjectStore("wardrobe4", {keyPath: "id"});
+	    var index = store.createIndex("days" , "days" , {unique : false,multiEntry : true});
 	};
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("OutfitStore", "readwrite");
-	    var store = tx.objectStore("OutfitStore");
-	    var index = store.index("day");
+	    var tx = db.transaction("wardrobe4", "readwrite");
+	    var store = tx.objectStore("wardrobe4");
+	    var index = store.index("days");
 
-	    store.put({id: file.uid , uri : file , day : day || self.state.day});
+	    store.put({id: file.uid , uri : file , days : [day || self.state.day]});
 
 	    var saveImage = index.get(file.uid);
 
@@ -290,7 +313,7 @@ class AppForm extends Component {
   
   handleDetailsCancel = () => this.setState({ previewDetails: false })
 
-  handleOutfitSelectorCancel = () => this.setState({ handleOutfitSelectorCancel : false })
+  handleOutfitSelectorCancel = () => this.setState({ previewOutfitSelector : false })
 
   openOutfitSelector = () => this.setState({ previewOutfitSelector : true })
 
@@ -321,14 +344,15 @@ class AppForm extends Component {
   }
 
   handleDayChange = (day) => {
+  	this.props.router.push('/week/'+day);
   	console.log(day);
-  	this.setState({day},function(){
-  		if(day === "All"){
-  			this.getStore()
-  			return;
-  		}
-  		this.getStore(day);
-  	})
+  	// this.setState({day},function(){
+  	// 	if(day === "All"){
+  	// 		this.getStore()
+  	// 		return;
+  	// 	}
+  	// 	this.getStore(day);
+  	// })
   }
 
   previousDay = () => {

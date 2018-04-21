@@ -116,3 +116,8 @@
 .outfit-dashed-btn .ant-upload-text p{
     white-space: normal;
 }
+
+.modal-outfit-holder{
+    float : none;
+    display: inline-block;
+}
