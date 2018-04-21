@@ -139,7 +139,7 @@ class AppForm extends Component {
 	    console.log('check');
 	    
 	    getAllByDay.onsuccess = function() {
-	    	console.log(getAll);
+	    	console.log(getAllByDay);
 	    	//updating state with data retrieved from database
 	   		if(getAllByDay.result && getAllByDay.result.length >= 0){
 	   			let fileList = getAllByDay.result.map(data => data.uri);
@@ -238,10 +238,27 @@ class AppForm extends Component {
 	    var store = tx.objectStore("wardrobe4");
 	    var update = store.openCursor();
 
-	    update.onsuccess = function() {
-	    	
-	    	console.log('start updating');
-
+	    update.onsuccess = function(event) {
+	    	console.log('start updating',event);
+	    	var cursor = event.target.result;
+	    	if(cursor) {
+		      if(outfits.indexOf(cursor.value.id)) {
+		        var updateData = cursor.value;
+	        	console.log(updateData.days, self.state.day , updateData.days.indexOf(self.state.day))
+	        	if(updateData.days.indexOf(self.state.day) < 0){
+	        		console.log('adding'+ self.state.day+ 'to days array');
+	        		updateData.days.push(self.state.day);
+	        		console.log(updateData.days);	
+	        		var request = cursor.update(updateData);
+			        request.onsuccess = function() {
+			          console.log('An outfit updated',cursor.value.id);
+			        };
+	        	}
+		      };
+		      cursor.continue();        
+		    } else {
+		      console.log('Entries displayed.');         
+		    }
 	    };
 
 	    update.onerror = function() {
@@ -251,6 +268,7 @@ class AppForm extends Component {
 
 	    tx.oncomplete = function() {
 	        db.close();
+	        self.getStore(self.state.day);
 	    };
 	}
   }
