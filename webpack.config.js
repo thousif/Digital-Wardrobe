@@ -21,7 +21,8 @@ module.exports = {
         	options: {
 			    presets: [],
 			    plugins: [
-			      ['import', { libraryName: "antd", style: true }]
+			      ['import', { libraryName: "antd", style: true }],
+            ['transform-decorators-legacy']
 			    ]
 			},
         }
