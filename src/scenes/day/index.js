@@ -50,42 +50,6 @@ class AppForm extends Component {
 	  return Math.floor(Math.random() * Math.floor(9));
   }
 
-  // function to retreive base64 of the uploaded image
-  getBase64FromImageUrl = (file,cb) => {
-    var fileReader = new FileReader();
-
-    fileReader.onload=function(e) {
-        var image = new Image();
-
-        image.src = e.target.result;
-
-        image.onload=function(){
-
-        	// basic image optimization for storing big images
-            var MAXWidthHeight = 800;
-            var resolution = MAXWidthHeight/Math.max(this.width,this.height),
-
-            width = Math.round(this.width*resolution),
-            height = Math.round(this.height*resolution),
-            canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
-
-            canvas.getContext("2d").drawImage(this,0,0,width,height);
-
-            var dataUrl = canvas.toDataURL("image/jpeg",0.8);
-            
-            cb({
-            	url : dataUrl,
-            	uid : file.uid,
-            	name : file.name
-            });
-        }
-    }
-
-	fileReader.readAsDataURL(file);
-  }
-
   componentDidMount() {
     // lets start
     // check if there is an existing database and update state .
@@ -95,10 +59,6 @@ class AppForm extends Component {
     	message.error("No such day exists");
     	return
     }
-    if(day === "All"){
-		this.getStore()
-		return;
-	}
 	this.getStore(day);
   }
 
@@ -186,21 +146,6 @@ class AppForm extends Component {
   		previewDetails : true,
   		file,
   	})
-  }
-
-  handleOk = (e) => {
-  	e.preventDefault();
-    this.props.form.validateFields((err, values) => {
-      if (!err) {
-        console.log('Received values of form: ', values);
-        this.storeToDB(this.state.file,values.day);
-        this.setState({
-        	previewDetails : false,
-        	file : {}
-        })
-        this.props.form.resetFields();
-      }
-    });
   }
 
   handleOutfitSelectorOk = (e) => {
@@ -391,36 +336,15 @@ class AppForm extends Component {
 
   handleCancel = () => this.setState({ previewVisible: false })
   
-  handleDetailsCancel = () => this.setState({ previewDetails: false })
-
   handleOutfitSelectorCancel = () => this.setState({ previewOutfitSelector : false })
 
   openOutfitSelector = () => this.setState({ previewOutfitSelector : true })
-
-  handlePreview = (file) => {
-    this.setState({
-      previewImage: file.url || file.thumbUrl,
-      previewVisible: true,
-    });
-  }
 
   handleRemove = (file) => {
   	let {fileList} = this.state;
   	fileList = fileList.filter(f => f.uid != file.uid);
   	this.removeFromDay(file);
   	this.setState({fileList})
-  }
-
-  handleUpload = (file) => {
-  	this.getBase64FromImageUrl(file.file,this.confirm)
-  }
-
-  handleChange = ({file, fileList }) => {
-  	console.log(fileList);
-  	if(file.status == "removed"){
-  		this.deleteFromDB(file);
-  	}
-  	this.setState({ fileList })
   }
 
   handleDayChange = (day) => {
@@ -474,29 +398,7 @@ class AppForm extends Component {
     const { loading, loadingMore, showLoadingMore, allFiles, day, theme } = this.state;
     const { form } = this.props;
     const { getFieldDecorator } = form;
-    const loadMore = showLoadingMore ? (
-      <div style={{ textAlign: 'center', marginTop: 12, height: 32, lineHeight: '32px' }}>
-        {loadingMore && <Spin />}
-        {!loadingMore && <Button onClick={this.onLoadMore}>loading more</Button>}
-      </div>
-    ) : null;
-    console.log(this.state);
     const { previewVisible, previewImage, fileList ,previewDetails, previewOutfitSelector } = this.state;
-    const uploadButton = ( (day === 'All') ? 
-	 	<div >
-        	<Icon type="plus" />
-        	<div className="ant-upload-text">
-        		Upload 
-        	</div>
-      	</div>
-	: 
-		<Button type="dashed" className="outfit-dashed-btn" onClick={this.openOutfitSelector}>
-        	<div className="ant-upload-text">
-        		<Icon type="plus" />
-        		<p>Add From Wardrobe</p>
-        	</div> 
-      	</Button>
-	)
       
     return (
       <div >
@@ -555,7 +457,7 @@ class AppForm extends Component {
 					        			</span>
 					        		</div>
 					        		<div>
-					        			<p class="image-holder-label">{outfit.label}</p>
+					        			<p className="image-holder-label">{outfit.label}</p>
 					        		</div>
 					        	</div>
 
@@ -566,42 +468,24 @@ class AppForm extends Component {
 						</Modal>
 				        <Col span={4}>
 				        	<div className="">
-				        		{uploadButton}
+				        		<Button type="dashed" className="outfit-dashed-btn" onClick={this.openOutfitSelector}>
+							    	<div className="ant-upload-text">
+							    		<Icon type="plus" />
+							    		<p>Add From Wardrobe</p>
+							    	</div> 
+							  	</Button>
 				        	</div>
 				        </Col>
 				        </Row>
 			        </div> 	
-		          <Modal 
-		          visible={previewDetails} 
-		          onCancel={this.handleDetailsCancel}
-		          onOk = {this.handleOk} >
-		          	<Form layout="vertical">
-			            <FormItem label="Name">
-			              {getFieldDecorator('name', {
-			                rules: [{ required: true, message: 'Please input the name for image !' }],
-			              })(
-			                <Input />
-			              )}
-			            </FormItem>
-			            <FormItem label="Assign to a day">
-			              {getFieldDecorator('day')(
-			              	<Select placeholder = "Select a day for this cloth" >
-			              		{days.length > 0 && days.map(day => 
-			              			<Option key={day} value={day}>{day}</Option>
-			              		)}
-			              	</Select>
-			              	)}
-			            </FormItem>
-			        </Form>
-		          </Modal>
-		          <Modal 
-		          visible={previewOutfitSelector} 
-		          onCancel={this.handleOutfitSelectorCancel}
-		          onOk = {this.handleOutfitSelectorOk} >
-		          	<Form layout="vertical">
-			            <FormItem label="Assign to a day">
-			              {getFieldDecorator('outfits')(
-			              	<Checkbox.Group >
+					<Modal 
+					visible={previewOutfitSelector} 
+					onCancel={this.handleOutfitSelectorCancel}
+					onOk = {this.handleOutfitSelectorOk} >
+						<Form layout="vertical">
+					    <FormItem label="Assign to a day">
+					      {getFieldDecorator('outfits')(
+					      	<Checkbox.Group >
 							    <Row>
 							    	{allFiles && allFiles.length > 0 && allFiles.map(file => 
 							    		<Col key={file.uid} span={12}>
@@ -616,10 +500,10 @@ class AppForm extends Component {
 							    	)}
 							    </Row>
 							  </Checkbox.Group>
-			              	)}
-			            </FormItem>
-			        </Form>
-		          </Modal>
+					      	)}
+					    </FormItem>
+					</Form>
+					</Modal>
 			    </List>
         	</Content>
       	</Layout>

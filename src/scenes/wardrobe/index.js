@@ -31,7 +31,6 @@ const days = ['All','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday
 class AppForm extends Component {
   constructor(props){
     super(props);
-    console.log(this.props);
     this.state =  {
 	    theme : colorList[this.getRandomInt()],
 	    day : 'All', 
@@ -96,7 +95,7 @@ class AppForm extends Component {
   }
 
   getStore = (day) => {
-  	console.log("fetching all stored images");
+  	// console.log("fetching all stored images");
   	if (!('indexedDB' in window)) {
 	    console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
@@ -178,13 +177,6 @@ class AppForm extends Component {
         this.props.form.resetFields();
       }
     });
-  }
-
-  handleOutfitSelectorOk = (e) => {
-  	e.preventDefault();
-  	this.props.form.validateFields((err,values) => {
-  		console.log(values);
-  	})
   }
 
   storeToDB = (file,day) => {
@@ -294,15 +286,8 @@ class AppForm extends Component {
 	}	
   }
 
-
   handleCancel = () => this.setState({ previewVisible: false })
   
-  handleDetailsCancel = () => this.setState({ previewDetails: false })
-
-  handleOutfitSelectorCancel = () => this.setState({ previewOutfitSelector : false })
-
-  openOutfitSelector = () => this.setState({ previewOutfitSelector : true })
-
   handlePreview = (file) => {
     this.setState({
       previewImage: file.url || file.thumbUrl,
@@ -331,83 +316,13 @@ class AppForm extends Component {
 
   handleDayChange = (day) => {
   	this.props.router.push('/week/'+day);
-  	console.log(day);
-  	// this.setState({day},function(){
-  	// 	if(day === "All"){
-  	// 		this.getStore()
-  	// 		return;
-  	// 	}
-  	// 	this.getStore(day);
-  	// })
-  }
-
-  previousDay = () => {
-  	let theme = colorList[this.getRandomInt()]
-  	let prevDay = days.indexOf(this.state.day);
-  	
-  	if(prevDay < 0) return;
-  	else if(prevDay === 0) prevDay = days.length-1;
-  	else prevDay--;
-  	
-  	this.setState({
-  		theme,
-	    day : days[prevDay]
-  	},function(){
-  		if(this.state.day === "All"){
-  			this.getStore()
-  			return;
-  		}
-  		this.getStore(this.state.day)
-  	})
-  }
-
-  nextDay = () => {
-  	let theme = colorList[this.getRandomInt()]
-  	let nextDay = days.indexOf(this.state.day);
-  	
-  	if(nextDay < 0) return;
-  	else if(nextDay === days.length-1) nextDay = 0;
-  	else nextDay++;
-  	
-  	this.setState({
-  		theme,
-	    day : days[nextDay]
-  	},function(){
-  		if(this.state.day === "All"){
-  			this.getStore()
-  			return;
-  		}
-  		this.getStore(this.state.day)
-  	})
   }
 
   render() {
     const { loading, loadingMore, showLoadingMore, day,theme } = this.state;
     const { form } = this.props;
     const { getFieldDecorator } = form;
-    const loadMore = showLoadingMore ? (
-      <div style={{ textAlign: 'center', marginTop: 12, height: 32, lineHeight: '32px' }}>
-        {loadingMore && <Spin />}
-        {!loadingMore && <Button onClick={this.onLoadMore}>loading more</Button>}
-      </div>
-    ) : null;
-    console.log(this.state);
-    const { previewVisible, previewImage, fileList ,previewDetails, previewOutfitSelector } = this.state;
-    const uploadButton = ( (day === 'All') ? 
-	 	<div >
-        	<Icon type="plus" />
-        	<div className="ant-upload-text">
-        		Upload 
-        	</div>
-      	</div>
-	: 
-		<Button type="dashed" className="outfit-dashed-btn" onClick={this.openOutfitSelector}>
-        	<div className="ant-upload-text">
-        		<Icon type="plus" />
-        		<p>Add From Wardrobe</p>
-        	</div> 
-      	</Button>
-	)
+    const { previewVisible, previewImage, fileList ,previewDetails, previewOutfitSelector } = this.state;	
       
     return (
       <div >
@@ -421,14 +336,7 @@ class AppForm extends Component {
 			        className="loadmore-list"
 			        itemLayout="horizontal"
 			        >
-		          <List.Item actions={[
-		          	<Tooltip placement="top" title={"Previous Day"}>
-			        	<a><Icon type="left" onClick={()=>this.previousDay()} /></a>
-			        </Tooltip>, 
-			        <Tooltip placement="top" title={"Next Day"}>
-			        	<a><Icon type="right" onClick={()=>this.nextDay()}/></a>
-			        </Tooltip>	
-			        ]}>
+		          <List.Item>
 		            <List.Item.Meta
 		              avatar={<Avatar style={{backgroundColor : theme ,verticalAlign: 'middle'}} size="large">{day.slice(0,2)}</Avatar>}
 		              title={<a href="">{day}</a>}
@@ -449,8 +357,7 @@ class AppForm extends Component {
 						  </Select>
 		            </div>
 		          </List.Item>
-		          	{day === "All" ? 
-						<div className="img-container"> 
+					<div className="img-container"> 
 						<Upload
 						  customRequest = {this.handleUpload}
 						  listType="picture-card"
@@ -459,67 +366,41 @@ class AppForm extends Component {
 						  onPreview={this.handlePreview}
 						  onChange={this.handleChange}
 						>
-						  {uploadButton}
-						</Upload>
-						<Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
-						  <img alt="example" style={{ width: '100%' }} src={previewImage} />
-						</Modal>
-						</div>
-			        :
-			       		<div className="img-container"> 
-					        <Row>
-					        {fileList.length > 0 && fileList.map(outfit => 
-					        	<Col key={outfit.uid} span={4}>
-						        	<div key={outfit.uid} className="outfit-holder">
-						        		<div className="outfit-image">
-						        			<img className="image" src={outfit.url} />
-						        			<span className="actions">
-						        				<i className="anticon anticon-eye-o" 
-						        				title="Preview file" 
-						        				onClick={()=>{this.handlePreview(outfit)}}></i>
-						        				<i className="anticon anticon-delete" 
-						        				title="Remove file"
-						        				onClick={()=>{this.handleDelete(outfit)}}></i>
-						        			</span>
-						        		</div>
-						        	</div>
-								</Col>					        	
-					        )}
-					        <Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
-							  <img alt="example" style={{ width: '100%' }} src={previewImage} />
-							</Modal>
-					        <Col span={4}>
-					        	<div className="">
-					        		{uploadButton}
+						  	<div >
+					        	<Icon type="plus" />
+					        	<div className="ant-upload-text">
+					        		Upload 
 					        	</div>
-					        </Col>
-					        </Row>
-				        </div> 	
-		      	  	}
-		          <Modal 
-		          visible={previewDetails} 
-		          onCancel={this.handleDetailsCancel}
-		          onOk = {this.handleOk} >
-		          	<Form layout="vertical">
-			            <FormItem label="Name">
-			              {getFieldDecorator('name', {
-			                rules: [{ required: true, message: 'Please input the name for image !' }],
-			              })(
-			                <Input />
-			              )}
-			            </FormItem>
-			            <FormItem label="Assign to a day">
-			              {getFieldDecorator('day')(
-			              	<Select placeholder = "Select a day for this cloth" >
-			              		{days.length > 0 && days.map(day => 
-			              			<Option key={day} value={day}>{day}</Option>
-			              		)}
-			              	</Select>
-			              	)}
-			            </FormItem>
-			        </Form>
-		          </Modal>
+				      		</div>
+						</Upload>
+					<Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
+					  <img alt="example" style={{ width: '100%' }} src={previewImage} />
+					</Modal>
+					</div>
 			    </List>
+				<Modal 
+				visible={previewDetails} 
+				onCancel={this.handleDetailsCancel}
+				onOk = {this.handleOk} >
+					<Form layout="vertical">
+					    <FormItem label="Name">
+					      {getFieldDecorator('name', {
+					        rules: [{ required: true, message: 'Please input the name for image !' }],
+					      })(
+					        <Input />
+					      )}
+					    </FormItem>
+					    <FormItem label="Assign to a day">
+					      {getFieldDecorator('day')(
+					      	<Select placeholder = "Select a day for this cloth" >
+					      		{days.length > 0 && days.map(day => 
+					      			<Option key={day} value={day}>{day}</Option>
+					      		)}
+					      	</Select>
+					      	)}
+					    </FormItem>
+					</Form>
+				</Modal>
         	</Content>
         	{/*<Footer className="footer">Footer</Footer>*/}
       	</Layout>
