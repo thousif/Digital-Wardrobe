@@ -31,8 +31,8 @@ const days = ['All','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday
 class AppForm extends Component {
   constructor(props){
     super(props);
-    console.log(this.props);
-    console.log("week component");
+    ////console.log(this.props);
+    ////console.log("week component");
     this.state =  {
 	    theme : colorList[this.getRandomInt()],
 	    day : this.props.params.day, 
@@ -54,7 +54,7 @@ class AppForm extends Component {
     // lets start
     // check if there is an existing database and update state .
     let {day} = this.state;
-    console.log(days.indexOf(day))
+    ////console.log(days.indexOf(day))
     if(days.indexOf(day) < 0 ){
     	message.error("No such day exists");
     	return
@@ -63,9 +63,9 @@ class AppForm extends Component {
   }
 
   getStore = (day) => {
-  	console.log("fetching all stored images");
+  	////console.log("fetching all stored images");
   	if (!('indexedDB' in window)) {
-	    console.log('This browser doesn\'t support IndexedDB');
+	    //console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}
@@ -84,7 +84,7 @@ class AppForm extends Component {
 
   	open.onerror = (err) => {
 	    message.error("Error fetching data.");
-  		console.log(err);
+  		//console.log(err);
   	}
 
   	open.onsuccess = () => {
@@ -98,10 +98,10 @@ class AppForm extends Component {
 	    
 	    var getAll = index.getAll();
 
-	    console.log('check');
+	    //console.log('check');
 	    
 	    getAllByDay.onsuccess = function() {
-	    	console.log(getAllByDay);
+	    	//console.log(getAllByDay);
 	    	//updating state with data retrieved from database
 	   		if(getAllByDay.result && getAllByDay.result.length >= 0){
 	   			let fileList = getAllByDay.result.map(data => data.uri);
@@ -114,7 +114,7 @@ class AppForm extends Component {
 
 	    getAll.onsuccess = function() {
 	   		if(getAll.result && getAll.result.length >= 0){
-	   			console.log('getAll',getAll);
+	   			//console.log('getAll',getAll);
 	   			let allFiles = getAll.result.filter(file => file.days.indexOf(day) < 0).map(data => data.uri)
 	   			self.setState({
 	   				...self.state,
@@ -126,12 +126,12 @@ class AppForm extends Component {
 
 	    getAll.onerror = function() {
 	    	message.error("Error! Try again later");
-	    	console.log(getAll.error);
+	    	//console.log(getAll.error);
 	    }
 
 	    getAllByDay.onerror = function() {
 	    	message.error("Error! Try again later");
-	    	console.log(getAll.error);
+	    	//console.log(getAll.error);
 	    }
 
 	    // closing db connection
@@ -151,7 +151,7 @@ class AppForm extends Component {
   handleOutfitSelectorOk = (e) => {
   	e.preventDefault();
   	this.props.form.validateFields((err,values) => {
-  		console.log(values);
+  		//console.log(values);
   		this.updateDB(values.outfits);
   		this.setState({
   			previewOutfitSelector : false,
@@ -161,10 +161,10 @@ class AppForm extends Component {
   }
 
   updateDB = (outfits) => {
-  	console.log(outfits);
+  	//console.log(outfits);
 
   	if (!('indexedDB' in window)) {
-	    console.log('This browser doesn\'t support IndexedDB');
+	    //console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}
@@ -186,28 +186,28 @@ class AppForm extends Component {
 	    var tx = db.transaction("wardrobe5", "readwrite");
 	    var store = tx.objectStore("wardrobe5");
 	    
-	    console.log(self.state);
+	    //console.log(self.state);
 	    let allFiles  = self.state.allFilesRaw;
 	    let i = 0;
-	    console.log('allFiles', allFiles, outfits);
+	    //console.log('allFiles', allFiles, outfits);
 	    putNext();
 
 	    function putNext() {
-	    	console.log(i,outfits.length);
+	    	//console.log(i,outfits.length);
 	    	if (i<outfits.length) {
                 var file = allFiles.find(file => file.id == outfits[i])
                 file.days.push(self.state.day);
                 store.put(file).onsuccess = putNext;
                 ++i;
             } else {   // complete
-                console.log('populate complete');
+                //console.log('populate complete');
 		        self.getStore(self.state.day);
             }
 	    }
 
 	    db.onerror = function() {
 	    	message.error("Error saving .")
-	    	console.log(db.error);
+	    	//console.log(db.error);
 	    }
 
 	    tx.oncomplete = function() {
@@ -218,7 +218,7 @@ class AppForm extends Component {
 
   storeToDB = (file,day) => {
   	if (!('indexedDB' in window)) {
-	    console.log('This browser doesn\'t support IndexedDB');
+	    //console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}
@@ -264,14 +264,14 @@ class AppForm extends Component {
 					fileList
 				})
 			} else {
-				console.log("Invalid target id");
+				//console.log("Invalid target id");
 			}
 
 	    };
 
 	    saveImage.onerror = function() {
 	    	message.error("Error uploading the image.")
-	    	console.log(saveImage.error);
+	    	//console.log(saveImage.error);
 	    }
 
 	    tx.oncomplete = function() {
@@ -282,7 +282,7 @@ class AppForm extends Component {
 
   removeFromDay = (file) => {
   	if (!('indexedDB' in window)) {
-	    console.log('This browser doesn\'t support IndexedDB');
+	    //console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}

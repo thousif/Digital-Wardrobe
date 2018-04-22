@@ -95,9 +95,9 @@ class AppForm extends Component {
   }
 
   getStore = (day) => {
-  	// console.log("fetching all stored images");
+  	// //console.log("fetching all stored images");
   	if (!('indexedDB' in window)) {
-	    console.log('This browser doesn\'t support IndexedDB');
+	    //console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}
@@ -116,7 +116,7 @@ class AppForm extends Component {
 
   	open.onerror = (err) => {
 	    message.error("Error fetching data.");
-  		console.log(err);
+  		//console.log(err);
   	}
 
   	open.onsuccess = () => {
@@ -127,11 +127,11 @@ class AppForm extends Component {
 	    
 	    var getAll = index.getAll();
 
-	    console.log('check');
+	    //console.log('check');
 	   
 	    getAll.onsuccess = function() {
 	   		if(getAll.result && getAll.result.length >= 0){
-	   			console.log('getAll', getAll);
+	   			//console.log('getAll', getAll);
 	   			if(getAll.result && getAll.result.length >= 0){
 		   			let fileList = getAll.result.map(data => data.uri);
 		   			self.setState({
@@ -145,7 +145,7 @@ class AppForm extends Component {
 
 	    getAll.onerror = function() {
 	    	message.error("Error! Try again later");
-	    	console.log(getAll.error);
+	    	//console.log(getAll.error);
 	    }
 
 	    // closing db connection
@@ -166,7 +166,7 @@ class AppForm extends Component {
   	e.preventDefault();
     this.props.form.validateFields((err, values) => {
       if (!err) {
-        console.log('Received values of form: ', values);
+        //console.log('Received values of form: ', values);
         let { file } = this.state;
         file.label = values.name;
         this.storeToDB(file,values.day);
@@ -181,7 +181,7 @@ class AppForm extends Component {
 
   storeToDB = (file,day) => {
   	if (!('indexedDB' in window)) {
-	    console.log('This browser doesn\'t support IndexedDB');
+	    //console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}
@@ -228,14 +228,14 @@ class AppForm extends Component {
 					fileList
 				})
 			} else {
-				console.log("Invalid target id");
+				//console.log("Invalid target id");
 			}
 
 	    };
 
 	    saveImage.onerror = function() {
 	    	message.error("Error uploading the image.")
-	    	console.log(saveImage.error);
+	    	//console.log(saveImage.error);
 	    }
 
 	    tx.oncomplete = function() {
@@ -246,7 +246,7 @@ class AppForm extends Component {
 
   deleteFromDB = (file) => {
   	if (!('indexedDB' in window)) {
-	    console.log('This browser doesn\'t support IndexedDB');
+	    //console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
 	    return;
 	}
@@ -271,13 +271,13 @@ class AppForm extends Component {
 	    var getImage = store.delete(file.uid);
 
 	    getImage.onsuccess = function() {
-	    	console.log("deleted from db");
+	    	//console.log("deleted from db");
 	    	message.success("Successfully deleted the image.")
 	    };
 
 	    getImage.onerror = function() {
 	    	message.error("Error deleting the image.")
-	    	console.log(getImage.error);
+	    	//console.log(getImage.error);
 	    }
 
 	    tx.oncomplete = function() {
@@ -307,7 +307,7 @@ class AppForm extends Component {
   }
 
   handleChange = ({file, fileList }) => {
-  	console.log(fileList);
+  	//console.log(fileList);
   	if(file.status == "removed"){
   		this.deleteFromDB(file);
   	}
