@@ -20,7 +20,6 @@ import { List,
 	notification,
 	Select } from 'antd'
 import moment from 'moment'
-import { connect } from 'react-redux'
 import '../../styles/index.css'
 const { Header, Footer, Content } = Layout;
 const colorList = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae','#FF3333','#97AF83','#8FCCFF','#8F00F8','#FF5FC6','#B03060'];
@@ -28,12 +27,6 @@ const FormItem = Form.Item;
 const Option = Select.Option;
 
 const days = ['All','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
-@connect((store) => {
-  return {
-    demo : store.wardrobe,
-  };
-})
 
 class AppForm extends Component {
   constructor(props){
