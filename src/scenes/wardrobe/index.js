@@ -22,6 +22,7 @@ import { List,
 import moment from 'moment'
 import { connect } from 'react-redux'
 import '../../styles/index.css'
+import { fetchAllFiles } from '../../actions/wardrobe'
 const { Header, Footer, Content } = Layout;
 const colorList = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae','#FF3333','#97AF83','#8FCCFF','#8F00F8','#FF5FC6','#B03060'];
 const FormItem = Form.Item;
@@ -31,7 +32,7 @@ const days = ['All','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday
 
 @connect((store) => {
   return {
-    demo : store.wardrobe,
+    allFiles : store.wardrobe.allFiles,
   };
 })
 
@@ -93,12 +94,12 @@ class AppForm extends Component {
   componentDidMount() {
     // lets start
     // check if there is an existing database and update state .
-    let {day} = this.state;
-    if(day === "All"){
-		this.getStore()
-		return;
-	}
-	this.getStore(day);
+	this.getStore();
+	this.props.dispatch(fetchAllFiles());
+  }
+
+  componentWillReceiveProps(nextProps){
+  	console.log(nextProps);
   }
 
   getStore = (day) => {
