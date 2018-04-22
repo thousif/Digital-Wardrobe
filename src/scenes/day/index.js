@@ -113,12 +113,13 @@ class AppForm extends Component {
 	// passing state to local scope 
 	const self = this;
 
-	const open = indexedDB.open('myDatabase', 4);
+	const open = indexedDB.open('myDatabase', 5);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("wardrobe4", {keyPath: "id"});
+	    var store = db.createObjectStore("wardrobe5", {keyPath: "id"});
 	    var index = store.createIndex("days" , "days" , {unique : false,multientry : true});
+		store.createIndex("id","id", { unique : true });
 	};
 
   	open.onerror = (err) => {
@@ -128,11 +129,12 @@ class AppForm extends Component {
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("wardrobe4", "readwrite");
-	    var store = tx.objectStore("wardrobe4");
-	    var index = store.index("days");
+	    var tx = db.transaction("wardrobe5", "readwrite");
+	    var store = tx.objectStore("wardrobe5");
+	    var index = store.index("id");
+	    var indexByDay = store.index("days");
 
-	    var getAllByDay = index.getAll(day);
+	    var getAllByDay = indexByDay.getAll(day);
 	    
 	    var getAll = index.getAll();
 
@@ -156,7 +158,8 @@ class AppForm extends Component {
 	   			let allFiles = getAll.result.filter(file => file.days.indexOf(day) < 0).map(data => data.uri)
 	   			self.setState({
 	   				...self.state,
-	   				allFiles
+	   				allFiles,
+	   				allFilesRaw : getAll.result
 	   			})
 	   		}
 	    }
@@ -224,51 +227,46 @@ class AppForm extends Component {
 	// passing state to local scope 
 	const self = this;
 
-	const open = indexedDB.open('myDatabase', 4);
+	const open = indexedDB.open('myDatabase', 5);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("wardrobe4", {keyPath: "id"});
+	    var store = db.createObjectStore("wardrobe5", {keyPath: "id"});
+	  	store.createIndex("id","id", {unique : true});
 	    var index = store.createIndex("days" , "days" , {unique : false,multientry : true});
 	};
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("wardrobe4", "readwrite");
-	    var store = tx.objectStore("wardrobe4");
-	    var update = store.openCursor();
+	    var tx = db.transaction("wardrobe5", "readwrite");
+	    var store = tx.objectStore("wardrobe5");
+	    
+	    console.log(self.state);
+	    let allFiles  = self.state.allFilesRaw;
+	    let i = 0;
+	    console.log('allFiles', allFiles, outfits);
+	    putNext();
 
-	    update.onsuccess = function(event) {
-	    	console.log('start updating',event);
-	    	var cursor = event.target.result;
-	    	if(cursor) {
-		      if(outfits.indexOf(cursor.value.id)) {
-		        var updateData = cursor.value;
-	        	console.log(updateData.days, self.state.day , updateData.days.indexOf(self.state.day))
-	        	if(updateData.days.indexOf(self.state.day) < 0){
-	        		console.log('adding'+ self.state.day+ 'to days array');
-	        		updateData.days.push(self.state.day);
-	        		console.log(updateData.days);	
-	        		var request = cursor.update(updateData);
-			        request.onsuccess = function() {
-			          console.log('An outfit updated',cursor.value.id);
-			        };
-	        	}
-		      };
-		      cursor.continue();        
-		    } else {
-		      console.log('Entries displayed.');         
-		    }
-	    };
+	    function putNext() {
+	    	console.log(i,outfits.length);
+	    	if (i<outfits.length) {
+                var file = allFiles.find(file => file.id == outfits[i])
+                file.days.push(self.state.day);
+                store.put(file).onsuccess = putNext;
+                ++i;
+            } else {   // complete
+                console.log('populate complete');
+		        self.getStore(self.state.day);
+            }
+	    }
 
-	    update.onerror = function() {
-	    	message.error("Error uploading the image.")
-	    	console.log(saveImage.error);
+	    db.onerror = function() {
+	    	message.error("Error saving .")
+	    	console.log(db.error);
 	    }
 
 	    tx.oncomplete = function() {
 	        db.close();
-	        self.getStore(self.state.day);
 	    };
 	}
   }
@@ -337,7 +335,7 @@ class AppForm extends Component {
 	}		
   }
 
-  deleteFromDB = (file) => {
+  removeFromDay = (file) => {
   	if (!('indexedDB' in window)) {
 	    console.log('This browser doesn\'t support IndexedDB');
 	    message.error("Your browser does not support this feature. please update to access.");
@@ -346,31 +344,43 @@ class AppForm extends Component {
 
 	const self = this;
 	
-	const open = indexedDB.open('myDatabase', 2);
+	const open = indexedDB.open('myDatabase', 5);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("OutfitStore", {keyPath: "id"});
-	    var index = store.createIndex("day" , "day" , {unique : false});
+	    var store = db.createObjectStore("wardrobe5", {keyPath: "id"});
+	    store.createIndex("id","id",{unique : true});
+	    store.createIndex("days" , "days" , {unique : false,multientry : true});
 	};
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("OutfitStore", "readwrite");
-	    var store = tx.objectStore("OutfitStore");
-	    var index = store.index("day");
+	    var tx = db.transaction("wardrobe5", "readwrite");
+	    var store = tx.objectStore("wardrobe5");
+	    
+	    let allFiles  = self.state.allFilesRaw;
 
-	    var getImage = store.delete(file.uid);
+        var fileToBeRemoved = allFiles.find(f => f.id === file.uid)
 
-	    getImage.onsuccess = function() {
-	    	console.log("deleted from db");
-	    	message.success("Successfully deleted the image.")
-	    };
+        if(fileToBeRemoved){
+        	let { days } = fileToBeRemoved;
+        	if(days && days.length > 0){
+        		fileToBeRemoved.days = days.filter(day => day != self.state.day);
+        	}
 
-	    getImage.onerror = function() {
-	    	message.error("Error deleting the image.")
-	    	console.log(getImage.error);
-	    }
+			var update = store.put(fileToBeRemoved);
+
+			update.onsuccess = function() {
+				message.success("Successfully removed from "+ self.state.day);
+			}
+
+			update.onerror = function() {
+				message.error(" Error removing this image");
+			}        	
+
+        } else {
+        	return
+        }
 
 	    tx.oncomplete = function() {
 	        db.close();
@@ -394,10 +404,10 @@ class AppForm extends Component {
     });
   }
 
-  handleDelete = (file) => {
+  handleRemove = (file) => {
   	let {fileList} = this.state;
   	fileList = fileList.filter(f => f.uid != file.uid);
-  	this.deleteFromDB(file);
+  	this.removeFromDay(file);
   	this.setState({fileList})
   }
 
@@ -414,12 +424,12 @@ class AppForm extends Component {
   }
 
   handleDayChange = (day) => {
-  	console.log(day);
+  	if(day === 'All'){
+  		this.props.router.push('/');
+  		return
+  	}
+  	this.props.router.push('/week/'+day); 
   	this.setState({day},function(){
-  		if(day === "All"){
-  			this.getStore()
-  			return;
-  		}
   		this.getStore(day);
   	})
   }
@@ -429,17 +439,14 @@ class AppForm extends Component {
   	let prevDay = days.indexOf(this.state.day);
   	
   	if(prevDay < 0) return;
-  	else if(prevDay === 0) prevDay = days.length-1;
+  	else if(prevDay === 0) prevDay = days.length-2;
   	else prevDay--;
-  	
+
   	this.setState({
   		theme,
 	    day : days[prevDay]
   	},function(){
-  		if(this.state.day === "All"){
-  			this.getStore()
-  			return;
-  		}
+  		this.props.router.push('/week/'+this.state.day);
   		this.getStore(this.state.day)
   	})
   }
@@ -451,15 +458,14 @@ class AppForm extends Component {
   	if(nextDay < 0) return;
   	else if(nextDay === days.length-1) nextDay = 0;
   	else nextDay++;
-  	
+  	if(days[nextDay] === "All"){
+		nextDay++;
+	}
   	this.setState({
   		theme,
 	    day : days[nextDay]
   	},function(){
-  		if(this.state.day === "All"){
-  			this.getStore()
-  			return;
-  		}
+  		this.props.router.push('/week/'+this.state.day);
   		this.getStore(this.state.day)
   	})
   }
@@ -532,53 +538,39 @@ class AppForm extends Component {
 						  </Select>
 		            </div>
 		          </List.Item>
-		          	{day === "All" ? 
-						<div className="img-container"> 
-						<Upload
-						  customRequest = {this.handleUpload}
-						  listType="picture-card"
-						  accept="image/*"
-						  fileList={fileList}
-						  onPreview={this.handlePreview}
-						  onChange={this.handleChange}
-						>
-						  {uploadButton}
-						</Upload>
-						<Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
+		       		<div className="img-container"> 
+				        <Row>
+				        {fileList.length > 0 && fileList.map(outfit => 
+				        	<Col key={outfit.uid} span={4}>
+					        	<div key={outfit.uid} className="outfit-holder">
+					        		<div className="outfit-image">
+					        			<img className="image" src={outfit.url} />
+					        			<span className="actions">
+					        				<i className="anticon anticon-eye-o" 
+					        				title="Preview file" 
+					        				onClick={()=>{this.handlePreview(outfit)}}></i>
+					        				<i className="anticon anticon-delete" 
+					        				title="Remove file"
+					        				onClick={()=>{this.handleRemove(outfit)}}></i>
+					        			</span>
+					        		</div>
+					        		<div>
+					        			<p class="image-holder-label">{outfit.label}</p>
+					        		</div>
+					        	</div>
+
+							</Col>					        	
+				        )}
+				        <Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
 						  <img alt="example" style={{ width: '100%' }} src={previewImage} />
 						</Modal>
-						</div>
-			        :
-			       		<div className="img-container"> 
-					        <Row>
-					        {fileList.length > 0 && fileList.map(outfit => 
-					        	<Col key={outfit.uid} span={4}>
-						        	<div key={outfit.uid} className="outfit-holder">
-						        		<div className="outfit-image">
-						        			<img className="image" src={outfit.url} />
-						        			<span className="actions">
-						        				<i className="anticon anticon-eye-o" 
-						        				title="Preview file" 
-						        				onClick={()=>{this.handlePreview(outfit)}}></i>
-						        				<i className="anticon anticon-delete" 
-						        				title="Remove file"
-						        				onClick={()=>{this.handleDelete(outfit)}}></i>
-						        			</span>
-						        		</div>
-						        	</div>
-								</Col>					        	
-					        )}
-					        <Modal visible={previewVisible} footer={null} onCancel={this.handleCancel}>
-							  <img alt="example" style={{ width: '100%' }} src={previewImage} />
-							</Modal>
-					        <Col span={4}>
-					        	<div className="">
-					        		{uploadButton}
-					        	</div>
-					        </Col>
-					        </Row>
-				        </div> 	
-		      	  	}
+				        <Col span={4}>
+				        	<div className="">
+				        		{uploadButton}
+				        	</div>
+				        </Col>
+				        </Row>
+			        </div> 	
 		          <Modal 
 		          visible={previewDetails} 
 		          onCancel={this.handleDetailsCancel}
@@ -617,14 +609,6 @@ class AppForm extends Component {
 							    				<div className="outfit-holder modal-outfit-holder">
 									        		<div className="outfit-image">
 									        			<img className="image" src={file.url} />
-									        			<span className="actions">
-									        				<i className="anticon anticon-eye-o" 
-									        				title="Preview file" 
-									        				onClick={()=>{this.handlePreview(file)}}></i>
-									        				<i className="anticon anticon-delete" 
-									        				title="Remove file"
-									        				onClick={()=>{this.handleDelete(file)}}></i>
-									        			</span>
 									        		</div>
 									        	</div>
 							    			</Checkbox>
@@ -638,7 +622,6 @@ class AppForm extends Component {
 		          </Modal>
 			    </List>
         	</Content>
-        	{/*<Footer className="footer">Footer</Footer>*/}
       	</Layout>
       </div>
     );

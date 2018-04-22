@@ -106,12 +106,13 @@ class AppForm extends Component {
 	// passing state to local scope 
 	const self = this;
 
-	const open = indexedDB.open('myDatabase', 4);
+	const open = indexedDB.open('myDatabase', 5);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("wardrobe4", {keyPath: "id"});
+	    var store = db.createObjectStore("wardrobe5", {keyPath: "id"});
 	    var index = store.createIndex("days" , "days" , {unique : false,multiEntry : true});
+	    store.createIndex("id","id",{ unique : true });
 	};
 
   	open.onerror = (err) => {
@@ -121,28 +122,14 @@ class AppForm extends Component {
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("wardrobe4", "readwrite");
-	    var store = tx.objectStore("wardrobe4");
-	    var index = store.index("days");
-
-	    var getAllByDay = index.getAll(days);
+	    var tx = db.transaction("wardrobe5", "readwrite");
+	    var store = tx.objectStore("wardrobe5");
+	    var index = store.index("id");
 	    
 	    var getAll = index.getAll();
 
 	    console.log('check');
-	    
-	    getAllByDay.onsuccess = function() {
-	    	console.log(getAll);
-	    	//updating state with data retrieved from database
-	   		if(getAllByDay.result && getAllByDay.result.length >= 0){
-	   			let fileList = getAllByDay.result.map(data => data.uri);
-	   			self.setState({
-	   				...self.state,
-	   				fileList
-	   			})
-	   		}
-	    };
-
+	   
 	    getAll.onsuccess = function() {
 	   		if(getAll.result && getAll.result.length >= 0){
 	   			console.log('getAll', getAll);
@@ -158,11 +145,6 @@ class AppForm extends Component {
 	    }
 
 	    getAll.onerror = function() {
-	    	message.error("Error! Try again later");
-	    	console.log(getAll.error);
-	    }
-
-	    getAllByDay.onerror = function() {
 	    	message.error("Error! Try again later");
 	    	console.log(getAll.error);
 	    }
@@ -186,7 +168,9 @@ class AppForm extends Component {
     this.props.form.validateFields((err, values) => {
       if (!err) {
         console.log('Received values of form: ', values);
-        this.storeToDB(this.state.file,values.day);
+        let { file } = this.state;
+        file.label = values.name;
+        this.storeToDB(file,values.day);
         this.setState({
         	previewDetails : false,
         	file : {}
@@ -218,18 +202,19 @@ class AppForm extends Component {
 		status : 'done'
 	}
 	
-	const open = indexedDB.open('myDatabase', 4);
+	const open = indexedDB.open('myDatabase', 5);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("wardrobe4", {keyPath: "id"});
-	    var index = store.createIndex("days" , "days" , {unique : false,multiEntry : true});
+	    var store = db.createObjectStore("wardrobe5", {keyPath: "id"});
+	    store.createIndex("id","id",{ unique : true });
+	    store.createIndex("days" , "days" , {unique : false,multiEntry : true});
 	};
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("wardrobe4", "readwrite");
-	    var store = tx.objectStore("wardrobe4");
+	    var tx = db.transaction("wardrobe5", "readwrite");
+	    var store = tx.objectStore("wardrobe5");
 	    var index = store.index("days");
 
 	    store.put({id: file.uid , uri : file , days : [day || self.state.day]});
@@ -276,19 +261,20 @@ class AppForm extends Component {
 
 	const self = this;
 	
-	const open = indexedDB.open('myDatabase', 2);
+	const open = indexedDB.open('myDatabase', 5);
 
 	open.onupgradeneeded = function() {
 	    var db = open.result;
-	    var store = db.createObjectStore("OutfitStore", {keyPath: "id"});
-	    var index = store.createIndex("day" , "day" , {unique : false});
+	    var store = db.createObjectStore("wardrobe5", {keyPath: "id"});
+	   	store.createIndex("id","id",{unique : true})
+	    store.createIndex("days" , "days" , {unique : false,multiEntry : true});
 	};
 
   	open.onsuccess = () => {
 	    var db = open.result;
-	    var tx = db.transaction("OutfitStore", "readwrite");
-	    var store = tx.objectStore("OutfitStore");
-	    var index = store.index("day");
+	    var tx = db.transaction("wardrobe5", "readwrite");
+	    var store = tx.objectStore("wardrobe5");
+	    var index = store.index("id");
 
 	    var getImage = store.delete(file.uid);
 
@@ -529,26 +515,6 @@ class AppForm extends Component {
 			              			<Option key={day} value={day}>{day}</Option>
 			              		)}
 			              	</Select>
-			              	)}
-			            </FormItem>
-			        </Form>
-		          </Modal>
-		          <Modal 
-		          visible={previewOutfitSelector} 
-		          onCancel={this.handleOutfitSelectorCancel}
-		          onOk = {this.handleOutfitSelectorOk} >
-		          	<Form layout="vertical">
-			            <FormItem label="Assign to a day">
-			              {getFieldDecorator('day')(
-			              	<Checkbox.Group >
-							    <Row>
-							      <Col span={8}><Checkbox value="A">A</Checkbox></Col>
-							      <Col span={8}><Checkbox value="B">B</Checkbox></Col>
-							      <Col span={8}><Checkbox value="C">C</Checkbox></Col>
-							      <Col span={8}><Checkbox value="D">D</Checkbox></Col>
-							      <Col span={8}><Checkbox value="E">E</Checkbox></Col>
-							    </Row>
-							  </Checkbox.Group>
 			              	)}
 			            </FormItem>
 			        </Form>
